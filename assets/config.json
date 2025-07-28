@@ -1,0 +1,23 @@
+{
+  "debug": false,
+  "initMsg": "This is the Bengine!",
+  "player": {
+    "position": {
+      "x": 600,
+      "y": 450
+    },
+    "speed": 150.0
+  },
+  "orb": {
+    "count": 0,
+    "position": {
+      "x": 100,
+      "y": 100
+    },
+    "speed": 100.0
+  },
+  "windowSize": {
+    "height": 1088,
+    "width": 1920
+  }
+}
