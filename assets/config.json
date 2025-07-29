@@ -9,7 +9,7 @@
     "speed": 150.0
   },
   "orb": {
-    "count": 0,
+    "count": 30,
     "position": {
       "x": 100,
       "y": 100

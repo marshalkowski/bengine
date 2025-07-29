@@ -2,6 +2,9 @@
 #include <fstream>
 #include <random>
 
+#include <imgui.h>
+#include <imgui-SFML.h>
+
 #include "../include/input.h"
 #include "../include/chrono.h"
 #include "../include/global.h"
@@ -99,8 +102,11 @@ int main()
     const auto config = json::parse(configFile);
     Global::setDebug(config["debug"]);
 
-    auto window = sf::RenderWindow(sf::VideoMode({ config["windowSize"]["width"], config["windowSize"]["height"] }), "Bengine 0.1.0a", sf::Style::Close | sf::Style::Titlebar);
+    sf::RenderWindow window(sf::VideoMode({ config["windowSize"]["width"], config["windowSize"]["height"] }), "Bengine 0.1.0a", sf::Style::Close | sf::Style::Titlebar);
     window.setFramerateLimit(144);
+
+    ImGui::SFML::Init(window);
+    sf::Clock clock;
 
     Chrono::init();
 
@@ -108,23 +114,17 @@ int main()
 
     InitECS();
 
-    DemoScene::Create(config);
-
-    sf::Texture txr("assets\\sprites\\orb.png");
-
-    sf::VertexArray vertices(sf::PrimitiveType::Triangles, 6);
-
-    vertices.append({ {100.0f,100.0f}, sf::Color::White, { 0.0f,0.0f } });
-    vertices.append({ {200.0f,100.0f}, sf::Color::White, {16.0f,0.0f} });
-    vertices.append({ {200.0f,200.0f}, sf::Color::White, {16.0f,16.0f} });
-    vertices.append({ {100.0f,100.0f}, sf::Color::White, {0.0f,0.0f} });
-    vertices.append({ {200.0f,200.0f}, sf::Color::White, {16.0f,16.0f} });
-    vertices.append({ {100.0f,200.0f}, sf::Color::White, {0.0f,16.0f} });
+    if (!config["debug"]) {
+        DemoScene::Create(config);
+    }
 
     while (window.isOpen())
     {
         while (const std::optional event = window.pollEvent())
         {
+            if (event.has_value()) {
+                ImGui::SFML::ProcessEvent(window, event.value());
+            }
             if (event->is<sf::Event::Closed>())
             {
                 window.close();
@@ -132,6 +132,8 @@ int main()
         }
 
         Chrono::tick();
+
+        ImGui::SFML::Update(window, clock.restart());
 
         // input?
         inputMoveSystem->update();
@@ -154,8 +156,19 @@ int main()
         if (config["debug"]) {
             spriteRenderer->debug(window, Global::textureManager());
             collisionSystem->debug(window);
+            // ImGui::ShowDemoWindow();
+            ImGui::SetNextWindowPos({ 100, 100 }, ImGuiCond_Once);
+            ImGui::SetNextWindowSize({ 200, 150 }, ImGuiCond_Once);
+            ImGui::Begin("Bengine v.0.1");
+            if (ImGui::Button("Load Scene")) {
+                DemoScene::Create(config);
+            }
+            if (ImGui::Button("Spawn Box")) {
+                DemoScene::SpawnBox(config);
+            }
+            ImGui::End();
         }
-        window.draw(vertices, &txr);
+        ImGui::SFML::Render(window);
         window.display();
     }
 

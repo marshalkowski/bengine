@@ -91,4 +91,13 @@ public:
         CreateBox(500, 564);
 
 	}
+
+    static void SpawnBox(json config) {
+        std::random_device rd;  // a seed source for the random number engine
+        std::mt19937 gen(rd()); // mersenne_twister_engine seeded with rd()
+        std::uniform_int_distribution<> rand_x(1, config["windowSize"]["width"]);
+        std::uniform_int_distribution<> rand_y(1, config["windowSize"]["height"]);
+
+        CreateBox(rand_x(gen), rand_y(gen));
+    }
 };
