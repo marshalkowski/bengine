@@ -33,7 +33,7 @@ public:
 		m_componentArray[indexOfRemovedEntity] = m_componentArray[indexOfLastElement];
 
 		Entity entityOfLastElement = m_indexToEntityMap[indexOfLastElement];
-		m_entityToIndexMap[indexOfLastElement] = indexOfRemovedEntity;
+		m_entityToIndexMap[entityOfLastElement] = indexOfRemovedEntity;
 		m_indexToEntityMap[indexOfRemovedEntity] = entityOfLastElement;
 
 		m_entityToIndexMap.erase(entity);
