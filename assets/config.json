@@ -1,5 +1,5 @@
 {
-  "debug": false,
+  "debug": true,
   "initMsg": "This is the Bengine!",
   "player": {
     "position": {
@@ -9,7 +9,7 @@
     "speed": 150.0
   },
   "orb": {
-    "count": 30,
+    "count": 0,
     "position": {
       "x": 100,
       "y": 100

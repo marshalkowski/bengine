@@ -9,6 +9,7 @@
 #include "../include/chrono.h"
 #include "../include/global.h"
 #include "../include/scene/demoScene.h"
+#include "../include/scene/sceneManager.h"
 #include "../include/util/vec2.h"
 #include "../include/util/textureManager.h"
 
@@ -102,6 +103,8 @@ int main()
     const auto config = json::parse(configFile);
     Global::setDebug(config["debug"]);
 
+    SceneManager sceneManager;
+
     sf::RenderWindow window(sf::VideoMode({ config["windowSize"]["width"], config["windowSize"]["height"] }), "Bengine 0.1.0a", sf::Style::Close | sf::Style::Titlebar);
     window.setFramerateLimit(144);
 
@@ -115,7 +118,8 @@ int main()
     InitECS();
 
     if (!config["debug"]) {
-        DemoScene::Create(config);
+        //DemoScene::Create(config);
+        sceneManager.LoadDemoScene(config);
     }
 
     while (window.isOpen())
@@ -161,10 +165,14 @@ int main()
             ImGui::SetNextWindowSize({ 200, 150 }, ImGuiCond_Once);
             ImGui::Begin("Bengine v.0.1");
             if (ImGui::Button("Load Scene")) {
-                DemoScene::Create(config);
+                // DemoScene::Create(config);
+                sceneManager.LoadDemoScene(config);
             }
             if (ImGui::Button("Spawn Box")) {
                 DemoScene::SpawnBox(config);
+            }
+            if (ImGui::Button("Clear Scene")) {
+                sceneManager.ClearScene();
             }
             ImGui::End();
         }

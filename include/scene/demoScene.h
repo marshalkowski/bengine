@@ -5,37 +5,42 @@
 #include "../ecs/entity.h"
 #include "../ecs/entityBuilder.h"
 
+#include "scene.h"
+
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-void CreateOrb(float x, float y, Entity target, float speed) {
-    EntityBuilder()
+Entity CreateOrb(float x, float y, Entity target, float speed) {
+    return EntityBuilder()
         .CreateEntity()
         .AddTransform(vec2(x, y))
         .AddSprite("assets\\sprites\\orb.png")
         .AddMovable(speed)
         .AddFollowMovement(target)
-        .AddCollider({ 20,20 });
+        .AddCollider({ 20,20 })
+        .ID();
 }
 
-void CreateBox(float x, float y) {
-    EntityBuilder()
+Entity CreateBox(float x, float y) {
+    return EntityBuilder()
         .CreateEntity()
         .AddTransform(vec2(x, y))
         .AddSprite("assets\\sprites\\box.png")
-        .AddCollider({ 32,32 });
+        .AddCollider({ 32,32 })
+        .ID();
 }
 
-void CreateTileMap(TileMap tileMap) {
-    EntityBuilder()
+Entity CreateTileMap(TileMap tileMap) {
+    return EntityBuilder()
         .CreateEntity()
-        .AddTileMap(tileMap);
+        .AddTileMap(tileMap)
+        .ID();
 }
 
 class DemoScene {
 public:
-	static void Create(json config) {
-        auto entity = EntityBuilder()
+	static Scene Create(json config) {
+        auto player = EntityBuilder()
             .CreateEntity()
             .AddTransform(vec2(config["player"]["position"]["x"], config["player"]["position"]["y"]))
             .AddSprite("assets\\sprites\\player.png")
@@ -44,7 +49,10 @@ public:
             .AddCollider({ 22,26 })
             .ID();
 
-        EntityBuilder()
+        std::vector<Entity> others;
+
+        // animated sprite
+        others.push_back(EntityBuilder()
             .CreateEntity()
             .AddTransform(vec2(config["player"]["position"]["x"] + 100.0f, config["player"]["position"]["y"]))
             .AddAnimatedSprite({ 
@@ -53,8 +61,7 @@ public:
                 "assets\\sprites\\player_003.png",
                 "assets\\sprites\\player_002.png"
             })
-            .AddMovable(config["player"]["speed"])
-            .ID();
+            .ID());
 
 
         auto tiles = std::vector<std::vector<int>>();
@@ -65,17 +72,19 @@ public:
             }
         }
 
-        CreateTileMap(TileMap(
+        auto tileMap = CreateTileMap(TileMap(
             "assets\\sprites\\tile_texture.png",
             32,
             4,
             tiles
         ));
 
-        EntityBuilder()
+        // trigger collider
+        others.push_back(EntityBuilder()
             .CreateEntity()
             .AddTransform({ 1000,1000 })
-            .AddCollider({ 32,32 }, true);
+            .AddCollider({ 32,32 }, true)
+            .ID());
 
         std::random_device rd;  // a seed source for the random number engine
         std::mt19937 gen(rd()); // mersenne_twister_engine seeded with rd()
@@ -83,13 +92,14 @@ public:
         std::uniform_int_distribution<> rand_y(1, config["windowSize"]["height"]);
 
         for (int i = 0; i < config["orb"]["count"]; i++) {
-            CreateOrb(rand_x(gen), rand_y(gen), entity, config["orb"]["speed"]);
+            others.push_back(CreateOrb(rand_x(gen), rand_y(gen), player, config["orb"]["speed"]));
         }
 
-        CreateBox(500, 500);
-        CreateBox(500, 532);
-        CreateBox(500, 564);
+        others.push_back(CreateBox(500, 500));
+        others.push_back(CreateBox(500, 532));
+        others.push_back(CreateBox(500, 564));
 
+        return { player, tileMap, others };
 	}
 
     static void SpawnBox(json config) {
