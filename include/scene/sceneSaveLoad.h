@@ -90,6 +90,17 @@ public:
 
 		SceneManager::AddObject(player);
 
+		auto crate = EntityBuilder()
+			.CreateEntity("Crate")
+			.AddTransform(vec2(176, 176))
+			.AddSprite("assets\\sprites\\crate.png")
+			.AddCollider({ 32,32 })
+			.AddDestructible()
+			.ID();
+
+		SceneManager::AddObject(crate);
+			
+
 		ECSSystems::Cameras()->init(Global::config());
 	}
 

@@ -67,7 +67,7 @@ public:
 	}
 
 	static Entity GetObjectByName(const std::string& name) {
-		if (!IsSceneLoaded) {
+		if (!IsSceneLoaded()) {
 			return -1;
 		}
 		

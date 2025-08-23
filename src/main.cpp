@@ -26,7 +26,6 @@ using json = nlohmann::json;
 
 int main()
 {
-    SceneManager sceneManager;
     EditorInterface editorInterface;
 
     std::ifstream configFile("assets\\config.json");
@@ -49,7 +48,7 @@ int main()
     ECSSystems::Init();
 
     if (!config["debug"]) {
-        sceneManager.LoadDemoScene(config);
+        SceneManager::LoadDemoScene(config);
     }
 
     while (window.isOpen())

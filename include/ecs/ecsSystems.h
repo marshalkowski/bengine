@@ -15,6 +15,8 @@
 #include "components/tileMapRenderer.h"
 #include "components/transform.h"
 
+#include "components/destructible.h"
+
 #include "systems/animatedSpriteRenderSystem.h"
 #include "systems/cameraSystem.h"
 #include "systems/collisionSystem.h"
@@ -23,6 +25,8 @@
 #include "systems/movementSystem.h"
 #include "systems/spriteRenderSystem.h"
 #include "systems/tileMapRenderSystem.h"
+
+#include "systems/destructionSystem.h"
 
 class ECSSystems {
 public:
@@ -42,6 +46,9 @@ public:
 		ECS::RegisterComponent<SpriteRenderer>();
 		ECS::RegisterComponent<TileMapRenderer>();
 		ECS::RegisterComponent<Transform>();
+		
+		// Crate Game
+		ECS::RegisterComponent<Destructible>();
 
 		Instance().m_animatedSpriteRenderer = ECS::RegisterSystem<AnimatedSpriteRenderSystem>();
 		Signature animSpriteSignature;
@@ -134,4 +141,6 @@ private:
 	std::shared_ptr<MovementSystem> m_movement;
 	std::shared_ptr<SpriteRenderSystem> m_spriteRenderer;
 	std::shared_ptr<TileMapRenderSystem> m_tileMapRenderer;
+
+	std::shared_ptr<DestructionSystem> m_destruction;
 };

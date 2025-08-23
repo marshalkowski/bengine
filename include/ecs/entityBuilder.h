@@ -15,6 +15,8 @@
 #include "components/tileMapRenderer.h"
 #include "../util/vec2.h"
 
+#include "components/destructible.h"
+
 class EntityBuilder {
 
 public:
@@ -122,6 +124,18 @@ public:
 		ECS::AddComponent(
 			entity,
 			TileMapRenderer{tileMap}
+		);
+
+		return *this;
+	}
+
+	// Crate Game
+	EntityBuilder& AddDestructible() {
+		assert(init && "entity must be created");
+
+		ECS::AddComponent(
+			entity,
+			Destructible{}
 		);
 
 		return *this;
