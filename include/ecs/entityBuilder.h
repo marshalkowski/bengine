@@ -4,11 +4,13 @@
 
 #include "ecs.h"
 #include "components/animatedSpriteRenderer.h"
+#include "components/camera.h"
 #include "components/collider.h"
 #include "components/transform.h"
 #include "components/movable.h"
 #include "components/followMovement.h"
 #include "components/inputMovement.h"
+#include "components/sceneObject.h"
 #include "components/spriteRenderer.h"
 #include "components/tileMapRenderer.h"
 #include "../util/vec2.h"
@@ -16,9 +18,13 @@
 class EntityBuilder {
 
 public:
-	EntityBuilder& CreateEntity() {
+	EntityBuilder& CreateEntity(std::string name) {
 		init = true;
 		entity = ECS::CreateEntity();
+		ECS::AddComponent(
+			entity,
+			SceneObject{ name }
+		);
 		return *this;
 	}
 
@@ -50,6 +56,17 @@ public:
 		ECS::AddComponent(
 			entity,
 			AnimatedSpriteRenderer{ frames, 0 }
+		);
+
+		return *this;
+	}
+
+	EntityBuilder& AddCamera() {
+		assert(init && "entity must be created");
+
+		ECS::AddComponent(
+			entity,
+			Camera{}
 		);
 
 		return *this;

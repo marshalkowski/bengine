@@ -6,13 +6,14 @@
 #include "../ecs/entityBuilder.h"
 
 #include "scene.h"
+#include "sceneUtils.h"
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
 Entity CreateOrb(float x, float y, Entity target, float speed) {
     return EntityBuilder()
-        .CreateEntity()
+        .CreateEntity("Orb")
         .AddTransform(vec2(x, y))
         .AddSprite("assets\\sprites\\orb.png")
         .AddMovable(speed)
@@ -23,7 +24,7 @@ Entity CreateOrb(float x, float y, Entity target, float speed) {
 
 Entity CreateBox(float x, float y) {
     return EntityBuilder()
-        .CreateEntity()
+        .CreateEntity("Box")
         .AddTransform(vec2(x, y))
         .AddSprite("assets\\sprites\\box.png")
         .AddCollider({ 32,32 })
@@ -32,7 +33,7 @@ Entity CreateBox(float x, float y) {
 
 Entity CreateTileMap(TileMap tileMap) {
     return EntityBuilder()
-        .CreateEntity()
+        .CreateEntity("Tile Map")
         .AddTileMap(tileMap)
         .ID();
 }
@@ -40,8 +41,10 @@ Entity CreateTileMap(TileMap tileMap) {
 class DemoScene {
 public:
 	static Scene Create(json config) {
+        Scene scene;
+
         auto player = EntityBuilder()
-            .CreateEntity()
+            .CreateEntity("Player")
             .AddTransform(vec2(config["player"]["position"]["x"], config["player"]["position"]["y"]))
             .AddSprite("assets\\sprites\\player.png")
             .AddMovable(config["player"]["speed"])
@@ -49,11 +52,11 @@ public:
             .AddCollider({ 22,26 })
             .ID();
 
-        std::vector<Entity> others;
+        SceneUtils::AddEntityToScene(player, scene);
 
         // animated sprite
-        others.push_back(EntityBuilder()
-            .CreateEntity()
+        SceneUtils::AddEntityToScene(EntityBuilder()
+            .CreateEntity("Animation Demo")
             .AddTransform(vec2(config["player"]["position"]["x"] + 100.0f, config["player"]["position"]["y"]))
             .AddAnimatedSprite({ 
                 "assets\\sprites\\player.png", 
@@ -61,13 +64,18 @@ public:
                 "assets\\sprites\\player_003.png",
                 "assets\\sprites\\player_002.png"
             })
-            .ID());
+            .ID(), scene);
 
-
+        auto camera = EntityBuilder()
+            .CreateEntity("Camera")
+            .AddTransform(vec2(config["player"]["position"]["x"], config["player"]["position"]["y"]))
+            .AddCamera()
+            .ID();
+        
         auto tiles = std::vector<std::vector<int>>();
-        for (auto y = 0; y < 34; y++) {
+        for (auto y = 0; y < 8; y++) { // 34
             tiles.push_back(std::vector<int>());
-            for (auto x = 0; x < 60; x++) {
+            for (auto x = 0; x < 8; x++) { // 60
                 tiles[y].push_back(1);
             }
         }
@@ -79,12 +87,14 @@ public:
             tiles
         ));
 
+        SceneUtils::AddEntityToScene(tileMap, scene);
+
         // trigger collider
-        others.push_back(EntityBuilder()
-            .CreateEntity()
+        SceneUtils::AddEntityToScene(EntityBuilder()
+            .CreateEntity("Trigger Demo")
             .AddTransform({ 1000,1000 })
             .AddCollider({ 32,32 }, true)
-            .ID());
+            .ID(), scene);
 
         std::random_device rd;  // a seed source for the random number engine
         std::mt19937 gen(rd()); // mersenne_twister_engine seeded with rd()
@@ -92,14 +102,16 @@ public:
         std::uniform_int_distribution<> rand_y(1, config["windowSize"]["height"]);
 
         for (int i = 0; i < config["orb"]["count"]; i++) {
-            others.push_back(CreateOrb(rand_x(gen), rand_y(gen), player, config["orb"]["speed"]));
+            SceneUtils::AddEntityToScene(CreateOrb(rand_x(gen), rand_y(gen), player, config["orb"]["speed"]), scene);
         }
 
-        others.push_back(CreateBox(500, 500));
-        others.push_back(CreateBox(500, 532));
-        others.push_back(CreateBox(500, 564));
+        SceneUtils::AddEntityToScene(CreateBox(500, 532), scene);
+        SceneUtils::AddEntityToScene(CreateBox(500, 564), scene);
+        SceneUtils::AddEntityToScene(CreateBox(500, 500), scene);
 
-        return { player, tileMap, others };
+        SceneUtils::ParentChild(player, camera, scene);
+
+        return scene;
 	}
 
     static void SpawnBox(json config) {

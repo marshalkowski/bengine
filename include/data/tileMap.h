@@ -15,9 +15,12 @@ public:
 		m_textureFile(textureFile), 
 		m_tiles(tiles),
 		m_textureRowSize(tilesPerRow) {
-		// auto texture =
-		auto ySize = tiles.size();
-		auto xSize = tiles[0].size();
+		initVertices();
+	}
+
+	void initVertices() {
+		auto ySize = m_tiles.size();
+		auto xSize = m_tiles[0].size();
 		m_vertices = sf::VertexArray(sf::PrimitiveType::Triangles, 6 * xSize * ySize);
 		for (auto y = 0; y < ySize; y++) {
 			for (auto x = 0; x < xSize; x++) {
@@ -48,10 +51,14 @@ private:
 		return sf::Vector2((col + xPos) * m_cellSize, (row + yPos) * m_cellSize);
 	}
 
+public:
 	int m_textureRowSize;
 	float m_cellSize;
 	std::string m_textureFile;
 	std::vector<std::vector<int>> m_tiles;
 
+private:
 	sf::VertexArray m_vertices;
 };
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(TileMap, m_textureRowSize, m_cellSize, m_textureFile, m_tiles)

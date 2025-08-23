@@ -4,6 +4,10 @@
 
 #include "util/textureManager.h"
 #include "events/eventBus.h"
+#include <fstream>
+
+#include <nlohmann/json.hpp>
+using json = nlohmann::json;
 
 class Global {
 public:
@@ -32,6 +36,14 @@ public:
 		return Instance().m_debug;
 	}
 
+	static void setConfig(json config) {
+		Instance().m_config = config;
+	}
+
+	static const json config() {
+		return Instance().m_config;
+	}
+
 private:
 	Global() {
 		m_font = sf::Font("assets\\fonts\\arial.ttf");
@@ -42,5 +54,6 @@ private:
 	sf::Font m_font;
 	std::shared_ptr<TextureManager> m_textureManager;
 	EventBus m_eventBus;
-	bool m_debug;
+	bool m_debug = false;
+	json m_config;
 };

@@ -34,3 +34,5 @@ struct vec2 {
         return { x * other, y * other };
     }
 };
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(vec2, x, y)

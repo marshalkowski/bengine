@@ -5,7 +5,10 @@
 #include "../ecs/entity.h"
 
 struct Scene {
-	Entity player;
-	Entity tileMap;
-	std::vector<Entity> otherEntities;
+
+	Scene() {
+		entities = std::vector<uint32_t>();
+	}
+
+	std::vector<uint32_t> entities;
 };

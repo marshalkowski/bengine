@@ -75,6 +75,9 @@ public:
 		Instance().m_systemManager->SetSignature<T>(signature);
 	}
 
+	static std::unordered_map<const char*, ComponentType> GetComponentTypes() {
+		return Instance().m_componentManager->GetComponentTypes();
+	}
 
 private:
 	ECS() {

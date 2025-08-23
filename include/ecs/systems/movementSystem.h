@@ -21,6 +21,17 @@ public:
 				transform.position.x + (movable.delta.x * dt * movable.speed), 
 				transform.position.y + (movable.delta.y * dt * movable.speed)
 			);
+
+			auto& sceneObject = ECS::GetComponent<SceneObject>(entity);
+			for (auto const& childEntity : sceneObject.children) {
+				if (ECS::HasComponent<Transform>(childEntity)) {
+					auto& childTransform = ECS::GetComponent<Transform>(childEntity);
+					childTransform.position = vec2(
+						childTransform.position.x + (movable.delta.x * dt * movable.speed),
+						childTransform.position.y + (movable.delta.y * dt * movable.speed)
+					);
+				}
+			}
 		}
 	}
 

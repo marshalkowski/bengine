@@ -1,124 +1,54 @@
 #include <SFML/Graphics.hpp>
 #include <fstream>
-#include <random>
+//s#include <random>
+#include <iostream>
 
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui-SFML.h>
 
 #include "../include/input.h"
 #include "../include/chrono.h"
 #include "../include/global.h"
+#include "../include/editor/editorInterface.h"
 #include "../include/scene/demoScene.h"
 #include "../include/scene/sceneManager.h"
+#include "../include/scene/sceneSaveLoad.h"
 #include "../include/util/vec2.h"
 #include "../include/util/textureManager.h"
 
 #include "../include/ecs/ecs.h"
+#include "../include/ecs/ecsSystems.h"
 #include "../include/ecs/entityBuilder.h"
-#include "../include/ecs/components/animatedSpriteRenderer.h"
-#include "../include/ecs/components/collider.h"
-#include "../include/ecs/components/transform.h"
-#include "../include/ecs/components/spriteRenderer.h"
-#include "../include/ecs/components/movable.h"
-#include "../include/ecs/components/inputMovement.h"
-#include "../include/ecs/components/followMovement.h"
-#include "../include/ecs/components/tileMapRenderer.h"
-
-#include "../include/ecs/systems/animatedSpriteRenderSystem.h"
-#include "../include/ecs/systems/collisionSystem.h"
-#include "../include/ecs/systems/spriteRenderSystem.h"
-#include "../include/ecs/systems/movementSystem.h"
-#include "../include/ecs/systems/inputMoveSystem.h"
-#include "../include/ecs/systems/followMoveSystem.h"
-#include "../include/ecs/systems/tileMapRenderSystem.h"
 
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 
-std::shared_ptr<SpriteRenderSystem> spriteRenderer;
-std::shared_ptr<MovementSystem> movementSystem;
-std::shared_ptr<InputMoveSystem> inputMoveSystem;
-std::shared_ptr<FollowMoveSystem> followMoveSystem;
-std::shared_ptr<CollisionSystem> collisionSystem;
-std::shared_ptr<TileMapRenderSystem> tileMapRenderer;
-std::shared_ptr<AnimatedSpriteRenderSystem> animatedSpriteRenderer;
-
-void InitECS() {
-    ECS::RegisterComponent<Transform>();
-    ECS::RegisterComponent<SpriteRenderer>();
-    ECS::RegisterComponent<Movable>();
-    ECS::RegisterComponent<InputMovement>();
-    ECS::RegisterComponent<FollowMovement>();
-    ECS::RegisterComponent<Collider>();
-    ECS::RegisterComponent<TileMapRenderer>();
-    ECS::RegisterComponent<AnimatedSpriteRenderer>();
-
-    spriteRenderer = ECS::RegisterSystem<SpriteRenderSystem>();
-    Signature spriteSignature;
-    spriteSignature.set(ECS::GetComponentType<Transform>());
-    spriteSignature.set(ECS::GetComponentType<SpriteRenderer>());
-    ECS::SetSystemSignature<SpriteRenderSystem>(spriteSignature);
-
-    movementSystem = ECS::RegisterSystem<MovementSystem>();
-    Signature movementSignature;
-    movementSignature.set(ECS::GetComponentType<Transform>());
-    movementSignature.set(ECS::GetComponentType<Movable>());
-    ECS::SetSystemSignature<MovementSystem>(movementSignature);
-    movementSystem->init();
-
-    inputMoveSystem = ECS::RegisterSystem<InputMoveSystem>();
-    Signature inputMoveSignature;
-    inputMoveSignature.set(ECS::GetComponentType<InputMovement>());
-    inputMoveSignature.set(ECS::GetComponentType<Movable>());
-    ECS::SetSystemSignature<InputMoveSystem>(inputMoveSignature);
-
-    followMoveSystem = ECS::RegisterSystem<FollowMoveSystem>();
-    Signature followMoveSignature;
-    followMoveSignature.set(ECS::GetComponentType<FollowMovement>());
-    followMoveSignature.set(ECS::GetComponentType<Movable>());
-    followMoveSignature.set(ECS::GetComponentType<Transform>());
-    ECS::SetSystemSignature<FollowMoveSystem>(followMoveSignature);
-
-    collisionSystem = ECS::RegisterSystem<CollisionSystem>();
-    Signature collisionSignature;
-    collisionSignature.set(ECS::GetComponentType<Transform>());
-    collisionSignature.set(ECS::GetComponentType<Collider>());
-    ECS::SetSystemSignature<CollisionSystem>(collisionSignature);
-
-    tileMapRenderer = ECS::RegisterSystem<TileMapRenderSystem>();
-    Signature tileMapSignature;
-    tileMapSignature.set(ECS::GetComponentType<TileMapRenderer>());
-    ECS::SetSystemSignature<TileMapRenderSystem>(tileMapSignature);
-
-    animatedSpriteRenderer = ECS::RegisterSystem<AnimatedSpriteRenderSystem>();
-    Signature animSpriteSignature;
-    animSpriteSignature.set(ECS::GetComponentType<AnimatedSpriteRenderer>());
-    animSpriteSignature.set(ECS::GetComponentType<Transform>());
-    ECS::SetSystemSignature<AnimatedSpriteRenderSystem>(animSpriteSignature);
-}
-
 int main()
 {
-    std::ifstream configFile("assets\\config.json");
-    const auto config = json::parse(configFile);
-    Global::setDebug(config["debug"]);
-
     SceneManager sceneManager;
+    EditorInterface editorInterface;
 
+    std::ifstream configFile("assets\\config.json");
+    auto c = json::parse(configFile);
+    Global::setConfig(c);
+    Global::setDebug(c["debug"]);
+
+    auto config = Global::config();
     sf::RenderWindow window(sf::VideoMode({ config["windowSize"]["width"], config["windowSize"]["height"] }), "Bengine 0.1.0a", sf::Style::Close | sf::Style::Titlebar);
     window.setFramerateLimit(144);
 
     ImGui::SFML::Init(window);
     sf::Clock clock;
 
+    auto view = sf::View(sf::FloatRect({ 0.0f,0.0f }, { (float)config["windowSize"]["width"], (float)config["windowSize"]["height"] }));
+    window.setView(view);
+
     Chrono::init();
 
-    sf::Text text(Global::font(), config["initMsg"].get<std::string>(), 20U);
-
-    InitECS();
+    ECSSystems::Init();
 
     if (!config["debug"]) {
-        //DemoScene::Create(config);
         sceneManager.LoadDemoScene(config);
     }
 
@@ -140,33 +70,34 @@ int main()
         ImGui::SFML::Update(window, clock.restart());
 
         // input?
-        inputMoveSystem->update();
-        followMoveSystem->update();
+        ECSSystems::InputMove()->update();
+        ECSSystems::FollowMove()->update();
 
         // physics
-        collisionSystem->update(Chrono::deltaTime());
+        ECSSystems::Collision()->update(Chrono::deltaTime());
 
         // game logic
-        movementSystem->update(Chrono::deltaTime());
-
-        text.setString(std::to_string(1.0f / Chrono::deltaTime()));
+        ECSSystems::Movement()->update(Chrono::deltaTime());
 
         // render
+        ECSSystems::Cameras()->update(window);
         window.clear();
-        tileMapRenderer->update(window, Global::textureManager());
-        window.draw(text);
-        spriteRenderer->update(window, Global::textureManager());
-        animatedSpriteRenderer->update(window, Global::textureManager(), Chrono::deltaTime());
+        ECSSystems::TileMapRender()->update(window, Global::textureManager());
+        ECSSystems::SpriteRender()->update(window, Global::textureManager());
+        ECSSystems::AnimatedSpriteRender()->update(window, Global::textureManager(), Chrono::deltaTime());
         if (config["debug"]) {
-            spriteRenderer->debug(window, Global::textureManager());
-            collisionSystem->debug(window);
-            // ImGui::ShowDemoWindow();
-            ImGui::SetNextWindowPos({ 100, 100 }, ImGuiCond_Once);
-            ImGui::SetNextWindowSize({ 200, 150 }, ImGuiCond_Once);
+            ECSSystems::SpriteRender()->debug(window, Global::textureManager());
+            ECSSystems::Collision()->debug(window);
+            editorInterface.Render();
+            /*ImGui::SetNextWindowPos({ 0, 0 }, ImGuiCond_Once);
+            ImGui::SetNextWindowSize({ 400, 150 }, ImGuiCond_Once);
             ImGui::Begin("Bengine v.0.1");
             if (ImGui::Button("Load Scene")) {
-                // DemoScene::Create(config);
-                sceneManager.LoadDemoScene(config);
+                SceneManager::LoadDemoScene(config);
+            }
+            if (ImGui::Button("Load From File")) {
+                SceneSaveLoad load;
+                load.Load("testScene");
             }
             if (ImGui::Button("Spawn Box")) {
                 DemoScene::SpawnBox(config);
@@ -174,7 +105,34 @@ int main()
             if (ImGui::Button("Clear Scene")) {
                 sceneManager.ClearScene();
             }
+            bool sceneLoaded = sceneManager.IsSceneLoaded();
+            if (!sceneLoaded) {
+                ImGui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            }
+            if (ImGui::Button("Save Scene")) {
+                SceneSaveLoad save;
+                save.Save(sceneManager.GetScene(), "testScene");
+            }
+            if (!sceneLoaded) {
+                ImGui::PopItemFlag();
+            }
             ImGui::End();
+            ImGui::SetNextWindowPos({ 0, 150 }, ImGuiCond_Once);
+            ImGui::SetNextWindowSize({ 400, 100 }, ImGuiCond_Once);
+            ImGui::Begin("Performance");
+            const auto frameRate = std::to_string(1.0f / Chrono::deltaTime());
+            ImGui::Text((std::string("Frame Rate ") + frameRate).c_str());
+            ImGui::End();
+            ImGui::SetNextWindowPos({ 0, 250 }, ImGuiCond_Once);
+            ImGui::SetNextWindowSize({ 400, 800 }, ImGuiCond_Once);
+            ImGui::Begin("Scene");
+            if (SceneManager::IsSceneLoaded()) {
+                for (auto e : SceneManager::GetScene().entities) {
+                    ImGui::Selectable(ECS::GetComponent<SceneObject>(e).name.c_str());
+                }
+            }
+            ImGui::End();*/
+
         }
         ImGui::SFML::Render(window);
         window.display();

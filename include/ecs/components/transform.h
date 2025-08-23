@@ -5,3 +5,5 @@
 struct Transform {
 	vec2 position;
 };
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Transform, position)

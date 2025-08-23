@@ -59,6 +59,10 @@ public:
 		}
 	}
 
+	std::unordered_map<const char*, ComponentType> GetComponentTypes() {
+		return m_componentTypes;
+	}
+
 private:
 	std::unordered_map<const char*, ComponentType> m_componentTypes{};
 

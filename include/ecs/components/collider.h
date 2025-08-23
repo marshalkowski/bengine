@@ -10,3 +10,5 @@ struct Collider {
 	bool collision;
 	std::unordered_set<Entity> entitiesInTrigger;
 };
+
+NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(Collider, size, trigger)
