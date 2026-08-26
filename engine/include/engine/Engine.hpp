@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 namespace engine {
 
 struct WindowConfig {
@@ -18,6 +20,30 @@ inline constexpr Color White{245, 245, 245, 255};
 inline constexpr Color DarkGray{80, 80, 80, 255};
 } // namespace colors
 
+// RAII handle for a texture loaded on the GPU. Only Engine can create one
+// (via LoadTexture); the backing resource is released when it goes out of scope.
+class Texture {
+public:
+    ~Texture();
+
+    Texture(Texture&&) noexcept;
+    Texture& operator=(Texture&&) noexcept;
+
+    Texture(const Texture&) = delete;
+    Texture& operator=(const Texture&) = delete;
+
+    int Width() const;
+    int Height() const;
+
+private:
+    friend class Engine;
+
+    struct Impl;
+    explicit Texture(std::unique_ptr<Impl> impl);
+
+    std::unique_ptr<Impl> impl_;
+};
+
 // Owns window + frame lifecycle. Does not own main() or the game loop itself —
 // the application calls ShouldClose()/BeginFrame()/EndFrame() from its own loop.
 class Engine {
@@ -34,6 +60,9 @@ public:
 
     void Clear(Color color);
     void DrawText(const char* text, int x, int y, int fontSize, Color color);
+
+    Texture LoadTexture(const char* filePath);
+    void DrawSprite(const Texture& texture, int x, int y);
 };
 
 } // namespace engine

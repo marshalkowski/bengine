@@ -24,3 +24,4 @@ FetchContent_MakeAvailable(raylib)
 
 add_subdirectory(engine)
 add_subdirectory(examples/00_hello_engine)
+add_subdirectory(examples/01_hello_sprite)
