@@ -1,5 +1,6 @@
 #include "engine/Engine.hpp"
 
+#include <cstdio>
 #include <utility>
 
 #include "raylib.h"
@@ -13,6 +14,12 @@ namespace {
 } // namespace
 
 namespace engine {
+
+std::string ToString(float value, int decimalPlaces) {
+    char buffer[64];
+    std::snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, value);
+    return std::string(buffer);
+}
 
 struct Texture::Impl {
     ::Texture2D raylibTexture;
@@ -65,6 +72,10 @@ void Engine::Clear(Color color) {
 
 void Engine::DrawText(const char* text, int x, int y, int fontSize, Color color) {
     ::DrawText(text, x, y, fontSize, ToRaylibColor(color));
+}
+
+void Engine::DrawText(const std::string& text, int x, int y, int fontSize, Color color) {
+    DrawText(text.c_str(), x, y, fontSize, color);
 }
 
 Texture Engine::LoadTexture(const char* filePath) {

@@ -1,8 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 namespace engine {
+
+// Formats a float with a fixed number of decimal places, e.g. ToString(0.5f, 2) -> "0.50".
+std::string ToString(float value, int decimalPlaces = 2);
 
 struct WindowConfig {
     int width = 800;
@@ -63,6 +67,7 @@ public:
 
     void Clear(Color color);
     void DrawText(const char* text, int x, int y, int fontSize, Color color);
+    void DrawText(const std::string& text, int x, int y, int fontSize, Color color);
 
     Texture LoadTexture(const char* filePath);
     void DrawSprite(const Texture& texture, int x, int y);
