@@ -55,6 +55,10 @@ void Engine::EndFrame() {
     EndDrawing();
 }
 
+float Engine::DeltaTime() const {
+    return GetFrameTime();
+}
+
 void Engine::Clear(Color color) {
     ClearBackground(ToRaylibColor(color));
 }

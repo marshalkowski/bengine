@@ -58,6 +58,9 @@ public:
     void BeginFrame();
     void EndFrame();
 
+    // Seconds elapsed since the previous frame.
+    float DeltaTime() const;
+
     void Clear(Color color);
     void DrawText(const char* text, int x, int y, int fontSize, Color color);
 
