@@ -2,6 +2,14 @@
 
 #include "raylib.h"
 
+namespace {
+
+::Color ToRaylibColor(engine::Color color) {
+    return {color.r, color.g, color.b, color.a};
+}
+
+} // namespace
+
 namespace engine {
 
 Engine::Engine(const WindowConfig& config) {
@@ -23,6 +31,14 @@ void Engine::BeginFrame() {
 
 void Engine::EndFrame() {
     EndDrawing();
+}
+
+void Engine::Clear(Color color) {
+    ClearBackground(ToRaylibColor(color));
+}
+
+void Engine::DrawText(const char* text, int x, int y, int fontSize, Color color) {
+    ::DrawText(text, x, y, fontSize, ToRaylibColor(color));
 }
 
 } // namespace engine
