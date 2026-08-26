@@ -11,6 +11,20 @@ namespace {
     return {color.r, color.g, color.b, color.a};
 }
 
+int ToRaylibKey(engine::Key key) {
+    switch (key) {
+        case engine::Key::W: return KEY_W;
+        case engine::Key::A: return KEY_A;
+        case engine::Key::S: return KEY_S;
+        case engine::Key::D: return KEY_D;
+        case engine::Key::Up: return KEY_UP;
+        case engine::Key::Down: return KEY_DOWN;
+        case engine::Key::Left: return KEY_LEFT;
+        case engine::Key::Right: return KEY_RIGHT;
+    }
+    return KEY_NULL;
+}
+
 } // namespace
 
 namespace engine {
@@ -64,6 +78,10 @@ void Engine::EndFrame() {
 
 float Engine::DeltaTime() const {
     return GetFrameTime();
+}
+
+bool Engine::IsKeyDown(Key key) const {
+    return ::IsKeyDown(ToRaylibKey(key));
 }
 
 void Engine::Clear(Color color) {

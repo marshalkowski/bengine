@@ -24,6 +24,19 @@ inline constexpr Color White{245, 245, 245, 255};
 inline constexpr Color DarkGray{80, 80, 80, 255};
 } // namespace colors
 
+// Physical keyboard keys. Only the keys concrete examples have needed so far;
+// extend as new examples require more.
+enum class Key {
+    W,
+    A,
+    S,
+    D,
+    Up,
+    Down,
+    Left,
+    Right,
+};
+
 // RAII handle for a texture loaded on the GPU. Only Engine can create one
 // (via LoadTexture); the backing resource is released when it goes out of scope.
 class Texture {
@@ -64,6 +77,9 @@ public:
 
     // Seconds elapsed since the previous frame.
     float DeltaTime() const;
+
+    // True every frame the key is physically held down.
+    bool IsKeyDown(Key key) const;
 
     void Clear(Color color);
     void DrawText(const char* text, int x, int y, int fontSize, Color color);
