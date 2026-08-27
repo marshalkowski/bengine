@@ -78,11 +78,18 @@ public:
 
     // Loads a texture and hands back a handle to it. The engine owns the
     // texture from this point on; there is no explicit unload — all loaded
-    // textures are released when this Engine is destroyed.
+    // textures are released when this Engine is destroyed. Repeated calls
+    // with the same filePath reuse the already-loaded texture instead of
+    // loading it again.
     TextureHandle LoadTexture(const char* filePath);
     int TextureWidth(TextureHandle texture) const;
     int TextureHeight(TextureHandle texture) const;
     void DrawSprite(TextureHandle texture, int x, int y);
+
+    // Diagnostic: how many distinct textures are currently loaded. Useful
+    // for verifying that repeated LoadTexture calls are being deduplicated;
+    // not meant to be a basis for game logic.
+    int LoadedTextureCount() const;
 
 private:
     struct Impl;

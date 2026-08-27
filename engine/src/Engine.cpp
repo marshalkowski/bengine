@@ -1,6 +1,7 @@
 #include "engine/Engine.hpp"
 
 #include <cstdio>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -37,10 +38,12 @@ std::string ToString(float value, int decimalPlaces) {
 }
 
 // The engine's texture resource manager: owns every loaded texture for the
-// lifetime of the Engine. Deliberately just a flat vector for now — no
-// caching/dedup and no per-texture unload, since nothing yet needs either.
+// lifetime of the Engine and deduplicates repeated LoadTexture calls for the
+// same path. Deliberately just a vector + a path->index cache for now — no
+// per-texture unload, since nothing yet needs it.
 struct Engine::Impl {
     std::vector<::Texture2D> textures;
+    std::unordered_map<std::string, std::size_t> textureIndexByPath;
 
     ~Impl() {
         for (::Texture2D& texture : textures) {
@@ -94,8 +97,15 @@ void Engine::DrawText(const std::string& text, int x, int y, int fontSize, Color
 }
 
 TextureHandle Engine::LoadTexture(const char* filePath) {
+    const auto existing = impl_->textureIndexByPath.find(filePath);
+    if (existing != impl_->textureIndexByPath.end()) {
+        return TextureHandle(existing->second);
+    }
+
     impl_->textures.push_back(::LoadTexture(filePath));
-    return TextureHandle(impl_->textures.size() - 1);
+    const std::size_t index = impl_->textures.size() - 1;
+    impl_->textureIndexByPath.emplace(filePath, index);
+    return TextureHandle(index);
 }
 
 int Engine::TextureWidth(TextureHandle texture) const {
@@ -108,6 +118,10 @@ int Engine::TextureHeight(TextureHandle texture) const {
 
 void Engine::DrawSprite(TextureHandle texture, int x, int y) {
     ::DrawTexture(impl_->textures[texture.index_], x, y, ::Color{255, 255, 255, 255});
+}
+
+int Engine::LoadedTextureCount() const {
+    return static_cast<int>(impl_->textures.size());
 }
 
 } // namespace engine
