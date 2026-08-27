@@ -13,7 +13,11 @@
 //
 // Which animation is active, when one-shots restart, and when playback
 // returns to a looping clip are all decided here — Animation itself has no
-// notion of "idle"/"walk"/"attack"/"hurt"/"defeat".
+// notion of "idle"/"walk"/"attack"/"hurt"/"defeat", nor any notion that a
+// "knight" or "skeleton" exists. Each clip here also uses its own
+// dedicated texture file (the real asset pack is one-file-per-action),
+// so the prototype selects the active texture alongside the active
+// animation — Animation itself never knows which texture goes with it.
 
 namespace {
 
@@ -21,6 +25,15 @@ constexpr int windowWidth = 800;
 constexpr int windowHeight = 450;
 constexpr int hudHeight = 44;
 
+// Real sprite frames are 128x64 (wider than tall, to fit outstretched
+// attack poses). Gameplay collision bounds are deliberately NOT the same
+// as the visual frame size — see playerSize/enemySize below.
+constexpr float spriteFrameWidth = 128.0f;
+constexpr float spriteFrameHeight = 64.0f;
+
+// Gameplay collision box: an explicit, prototype-owned approximation of
+// each character's body, independent of the sprite artwork's full extent
+// (which includes padding for outstretched slash frames).
 constexpr float playerSize = 64.0f;
 constexpr float playerSpeed = 200.0f; // pixels per second
 
@@ -30,6 +43,7 @@ constexpr int enemyMaxHealth = 3;
 
 constexpr float attackWidth = 40.0f;
 constexpr float attackVisualDuration = 0.15f;
+constexpr float attackImpactHoldDuration = 0.12f; // extra hold on the final (impact) attack frame
 constexpr engine::Color attackColor{230, 200, 60, 255};
 
 constexpr float exitSize = 50.0f;
@@ -38,21 +52,29 @@ constexpr float exitY = 180.0f;
 constexpr engine::Color exitLockedColor{150, 150, 150, 255};
 constexpr engine::Color exitOpenColor{80, 180, 90, 255};
 
-// Player sprite sheet: idle(2) + walk(4) + attack(3) = 9 frames, one row.
-constexpr engine::AnimationClip playerIdleClip{
-    .firstFrame = 0, .frameCount = 2, .frameWidth = 64.0f, .frameHeight = 64.0f, .frameDuration = 0.3f, .loop = true};
-constexpr engine::AnimationClip playerWalkClip{
-    .firstFrame = 2, .frameCount = 4, .frameWidth = 64.0f, .frameHeight = 64.0f, .frameDuration = 0.12f, .loop = true};
-constexpr engine::AnimationClip playerAttackClip{
-    .firstFrame = 6, .frameCount = 3, .frameWidth = 64.0f, .frameHeight = 64.0f, .frameDuration = 0.08f, .loop = false};
+// Clip definitions below are transcribed from ANIMATION_METADATA.md, the
+// human-filled-in source of truth for this asset pack. Each clip's
+// firstFrame is 0 since every action is its own single-row sheet (no
+// sharing a sheet across clips, unlike the earlier placeholder assets).
+constexpr engine::AnimationClip knightIdleClip{
+    .firstFrame = 0, .frameCount = 2, .frameWidth = spriteFrameWidth, .frameHeight = spriteFrameHeight,
+    .frameDuration = 0.4f, .loop = true};
+constexpr engine::AnimationClip knightWalkClip{
+    .firstFrame = 0, .frameCount = 6, .frameWidth = spriteFrameWidth, .frameHeight = spriteFrameHeight,
+    .frameDuration = 0.167f, .loop = true};
+constexpr engine::AnimationClip knightAttackClip{
+    .firstFrame = 0, .frameCount = 5, .frameWidth = spriteFrameWidth, .frameHeight = spriteFrameHeight,
+    .frameDuration = 0.167f, .loop = false};
 
-// Enemy sprite sheet: idle(3) + hurt(2) + defeat(3) = 8 frames, one row.
-constexpr engine::AnimationClip enemyIdleClip{
-    .firstFrame = 0, .frameCount = 3, .frameWidth = 64.0f, .frameHeight = 64.0f, .frameDuration = 0.2f, .loop = true};
-constexpr engine::AnimationClip enemyHurtClip{
-    .firstFrame = 3, .frameCount = 2, .frameWidth = 64.0f, .frameHeight = 64.0f, .frameDuration = 0.1f, .loop = false};
-constexpr engine::AnimationClip enemyDefeatClip{
-    .firstFrame = 5, .frameCount = 3, .frameWidth = 64.0f, .frameHeight = 64.0f, .frameDuration = 0.15f, .loop = false};
+constexpr engine::AnimationClip skeletonIdleClip{
+    .firstFrame = 0, .frameCount = 2, .frameWidth = spriteFrameWidth, .frameHeight = spriteFrameHeight,
+    .frameDuration = 0.5f, .loop = true};
+constexpr engine::AnimationClip skeletonHurtClip{
+    .firstFrame = 0, .frameCount = 2, .frameWidth = spriteFrameWidth, .frameHeight = spriteFrameHeight,
+    .frameDuration = 0.5f, .loop = false};
+constexpr engine::AnimationClip skeletonDefeatClip{
+    .firstFrame = 0, .frameCount = 9, .frameWidth = spriteFrameWidth, .frameHeight = spriteFrameHeight,
+    .frameDuration = 0.167f, .loop = false};
 
 enum class Facing { Left, Right };
 
@@ -60,9 +82,10 @@ struct Player {
     float x, y;
     Facing facing = Facing::Right;
     bool isAttacking = false;
-    engine::Animation idleAnimation{playerIdleClip};
-    engine::Animation walkAnimation{playerWalkClip};
-    engine::Animation attackAnimation{playerAttackClip};
+    float attackHoldTimer = 0.0f;
+    engine::Animation idleAnimation{knightIdleClip};
+    engine::Animation walkAnimation{knightWalkClip};
+    engine::Animation attackAnimation{knightAttackClip};
 };
 
 struct Enemy {
@@ -70,9 +93,9 @@ struct Enemy {
     int health = enemyMaxHealth;
     bool alive = true;
     bool isHurt = false;
-    engine::Animation idleAnimation{enemyIdleClip};
-    engine::Animation hurtAnimation{enemyHurtClip};
-    engine::Animation defeatAnimation{enemyDefeatClip};
+    engine::Animation idleAnimation{skeletonIdleClip};
+    engine::Animation hurtAnimation{skeletonHurtClip};
+    engine::Animation defeatAnimation{skeletonDefeatClip};
 
     Enemy(float startX, float startY) : x(startX), y(startY) {}
 };
@@ -94,14 +117,32 @@ engine::Rect AttackBounds(const Player& player) {
     return engine::Rect{player.x - attackWidth, player.y, attackWidth, playerSize};
 }
 
+// Sprite frames are wider than the gameplay collision box; center the
+// visual frame horizontally over the box rather than aligning their
+// left edges (visual bounds are not gameplay bounds).
+float SpriteDrawX(float entityX, float entitySize) {
+    return entityX - (spriteFrameWidth - entitySize) / 2.0f;
+}
+
 } // namespace
 
 int main() {
     engine::Engine app({.width = windowWidth, .height = windowHeight, .title = "Prototype 03 - Brawler"});
 
     const std::string assetDir = PROTOTYPE_BRAWLER_ASSET_DIR;
-    const engine::TextureHandle playerTexture = app.LoadTexture((assetDir + "/player_sheet.png").c_str());
-    const engine::TextureHandle enemyTexture = app.LoadTexture((assetDir + "/enemy_sheet.png").c_str());
+    const engine::TextureHandle knightIdleTexture =
+        app.LoadTexture((assetDir + "/knight/MBEU_character_knight-Idle-2.png").c_str());
+    const engine::TextureHandle knightWalkTexture =
+        app.LoadTexture((assetDir + "/knight/MBEU_character_knight-Walk.png").c_str());
+    const engine::TextureHandle knightAttackTexture =
+        app.LoadTexture((assetDir + "/knight/MBEU_character_knight-Strike-Fwd.png").c_str());
+
+    const engine::TextureHandle skeletonIdleTexture =
+        app.LoadTexture((assetDir + "/skeleton/MBEU_character_skeleton-Idle-2.png").c_str());
+    const engine::TextureHandle skeletonHurtTexture =
+        app.LoadTexture((assetDir + "/skeleton/MBEU_character_skeleton-Hit.png").c_str());
+    const engine::TextureHandle skeletonDefeatTexture =
+        app.LoadTexture((assetDir + "/skeleton/MBEU_character_skeleton-Fall.png").c_str());
 
     Player player{80.0f, 200.0f};
 
@@ -114,7 +155,6 @@ int main() {
 
     while (!app.ShouldClose()) {
         const float dt = app.DeltaTime();
-
         // --- player movement: WASD only; an arrow key is reserved for attacking ---
         float moveX = 0.0f;
         float moveY = 0.0f;
@@ -154,6 +194,7 @@ int main() {
 
         if (app.IsKeyPressed(engine::Key::Up)) {
             player.isAttacking = true;
+            player.attackHoldTimer = 0.0f;
             player.attackAnimation.Restart();
             attackVisualTimer = attackVisualDuration;
 
@@ -176,10 +217,19 @@ int main() {
         }
 
         // --- player animation selection: attacking beats moving beats idle ---
+        // The attack clip's own final frame is the "impact" pose; once it
+        // completes, hold on that frame a little longer before returning to
+        // walk/idle. Animation already stays on its last frame indefinitely
+        // once complete, so this only needs a small prototype-local timer —
+        // no engine change.
         if (player.isAttacking) {
-            player.attackAnimation.Update(dt);
-            if (player.attackAnimation.IsComplete()) {
-                player.isAttacking = false;
+            if (!player.attackAnimation.IsComplete()) {
+                player.attackAnimation.Update(dt);
+            } else {
+                player.attackHoldTimer += dt;
+                if (player.attackHoldTimer >= attackImpactHoldDuration) {
+                    player.isAttacking = false;
+                }
             }
         } else if (isMoving) {
             player.walkAnimation.Update(dt);
@@ -232,11 +282,13 @@ int main() {
 
         for (const Enemy& enemy : enemies) {
             if (enemy.alive) {
+                const engine::TextureHandle enemyTexture = enemy.isHurt ? skeletonHurtTexture : skeletonIdleTexture;
                 const engine::Rect frame =
                     enemy.isHurt ? enemy.hurtAnimation.CurrentFrameRect() : enemy.idleAnimation.CurrentFrameRect();
-                app.DrawSpriteRegion(enemyTexture, frame, enemy.x, enemy.y);
+                app.DrawSpriteRegion(enemyTexture, frame, SpriteDrawX(enemy.x, enemySize), enemy.y);
             } else if (!enemy.defeatAnimation.IsComplete()) {
-                app.DrawSpriteRegion(enemyTexture, enemy.defeatAnimation.CurrentFrameRect(), enemy.x, enemy.y);
+                app.DrawSpriteRegion(skeletonDefeatTexture, enemy.defeatAnimation.CurrentFrameRect(),
+                                     SpriteDrawX(enemy.x, enemySize), enemy.y);
             }
         }
 
@@ -245,6 +297,9 @@ int main() {
             app.DrawRectangle(attackBounds.x, attackBounds.y, attackBounds.width, attackBounds.height, attackColor);
         }
 
+        const engine::TextureHandle playerTexture = player.isAttacking  ? knightAttackTexture
+                                                     : isMoving          ? knightWalkTexture
+                                                                         : knightIdleTexture;
         engine::Rect playerFrame = player.isAttacking  ? player.attackAnimation.CurrentFrameRect()
                                     : isMoving          ? player.walkAnimation.CurrentFrameRect()
                                                         : player.idleAnimation.CurrentFrameRect();
@@ -254,7 +309,7 @@ int main() {
             // engine change was needed to add facing.
             playerFrame.width = -playerFrame.width;
         }
-        app.DrawSpriteRegion(playerTexture, playerFrame, player.x, player.y);
+        app.DrawSpriteRegion(playerTexture, playerFrame, SpriteDrawX(player.x, playerSize), player.y);
 
         app.DrawText("WASD to move, Up arrow to attack", 10, 4, 18, engine::colors::DarkGray);
 
