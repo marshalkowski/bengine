@@ -9,7 +9,11 @@
 // attack rules, enemy movement, and encounter/exit state are rules of this
 // prototype, not engine capabilities. The engine only supplies window
 // lifecycle, input, timing, resources, geometry, and rendering (including
-// primitives).
+// primitives, sprite regions, and clip playback via engine::Animation).
+//
+// Which animation is active, when one-shots restart, and when playback
+// returns to a looping clip are all decided here — Animation itself has no
+// notion of "idle"/"walk"/"attack"/"hurt"/"defeat".
 
 namespace {
 
@@ -20,15 +24,12 @@ constexpr int hudHeight = 44;
 constexpr float playerSize = 64.0f;
 constexpr float playerSpeed = 200.0f; // pixels per second
 
-constexpr float enemySize = 48.0f;
+constexpr float enemySize = 64.0f;
 constexpr float enemySpeed = 40.0f; // pixels per second
 constexpr int enemyMaxHealth = 3;
-constexpr engine::Color enemyColor{140, 70, 150, 255};
-constexpr engine::Color enemyHurtColor{230, 230, 230, 255};
 
 constexpr float attackWidth = 40.0f;
 constexpr float attackVisualDuration = 0.15f;
-constexpr float hurtFlashDuration = 0.15f;
 constexpr engine::Color attackColor{230, 200, 60, 255};
 
 constexpr float exitSize = 50.0f;
@@ -37,18 +38,43 @@ constexpr float exitY = 180.0f;
 constexpr engine::Color exitLockedColor{150, 150, 150, 255};
 constexpr engine::Color exitOpenColor{80, 180, 90, 255};
 
+// Player sprite sheet: idle(2) + walk(4) + attack(3) = 9 frames, one row.
+constexpr engine::AnimationClip playerIdleClip{
+    .firstFrame = 0, .frameCount = 2, .frameWidth = 64.0f, .frameHeight = 64.0f, .frameDuration = 0.3f, .loop = true};
+constexpr engine::AnimationClip playerWalkClip{
+    .firstFrame = 2, .frameCount = 4, .frameWidth = 64.0f, .frameHeight = 64.0f, .frameDuration = 0.12f, .loop = true};
+constexpr engine::AnimationClip playerAttackClip{
+    .firstFrame = 6, .frameCount = 3, .frameWidth = 64.0f, .frameHeight = 64.0f, .frameDuration = 0.08f, .loop = false};
+
+// Enemy sprite sheet: idle(3) + hurt(2) + defeat(3) = 8 frames, one row.
+constexpr engine::AnimationClip enemyIdleClip{
+    .firstFrame = 0, .frameCount = 3, .frameWidth = 64.0f, .frameHeight = 64.0f, .frameDuration = 0.2f, .loop = true};
+constexpr engine::AnimationClip enemyHurtClip{
+    .firstFrame = 3, .frameCount = 2, .frameWidth = 64.0f, .frameHeight = 64.0f, .frameDuration = 0.1f, .loop = false};
+constexpr engine::AnimationClip enemyDefeatClip{
+    .firstFrame = 5, .frameCount = 3, .frameWidth = 64.0f, .frameHeight = 64.0f, .frameDuration = 0.15f, .loop = false};
+
 enum class Facing { Left, Right };
 
 struct Player {
     float x, y;
     Facing facing = Facing::Right;
+    bool isAttacking = false;
+    engine::Animation idleAnimation{playerIdleClip};
+    engine::Animation walkAnimation{playerWalkClip};
+    engine::Animation attackAnimation{playerAttackClip};
 };
 
 struct Enemy {
     float x, y;
     int health = enemyMaxHealth;
     bool alive = true;
-    float hurtFlashTimer = 0.0f;
+    bool isHurt = false;
+    engine::Animation idleAnimation{enemyIdleClip};
+    engine::Animation hurtAnimation{enemyHurtClip};
+    engine::Animation defeatAnimation{enemyDefeatClip};
+
+    Enemy(float startX, float startY) : x(startX), y(startY) {}
 };
 
 engine::Rect PlayerBounds(const Player& player) {
@@ -74,14 +100,14 @@ int main() {
     engine::Engine app({.width = windowWidth, .height = windowHeight, .title = "Prototype 03 - Brawler"});
 
     const std::string assetDir = PROTOTYPE_BRAWLER_ASSET_DIR;
-    const engine::TextureHandle playerTexture = app.LoadTexture((assetDir + "/player.png").c_str());
+    const engine::TextureHandle playerTexture = app.LoadTexture((assetDir + "/player_sheet.png").c_str());
+    const engine::TextureHandle enemyTexture = app.LoadTexture((assetDir + "/enemy_sheet.png").c_str());
 
-    Player player{80.0f, 200.0f, Facing::Right};
+    Player player{80.0f, 200.0f};
 
-    std::vector<Enemy> enemies = {
-        Enemy{500.0f, 120.0f},
-        Enemy{620.0f, 320.0f},
-    };
+    std::vector<Enemy> enemies;
+    enemies.emplace_back(500.0f, 120.0f);
+    enemies.emplace_back(620.0f, 320.0f);
 
     float attackVisualTimer = 0.0f;
     bool encounterComplete = false;
@@ -116,9 +142,57 @@ int main() {
         player.x = std::clamp(player.x, 0.0f, static_cast<float>(windowWidth) - playerSize);
         player.y = std::clamp(player.y, static_cast<float>(hudHeight), static_cast<float>(windowHeight) - playerSize);
 
-        // --- enemies drift slowly toward the player ---
+        const bool isMoving = moveX != 0.0f || moveY != 0.0f;
+
+        // --- attack: one dedicated key, one damage evaluation per press ---
+        // Damage still lands synchronously on the key press, independent of
+        // which attack frame happens to be showing (see architecture review
+        // for why this is an acceptable simplification for now).
+        if (attackVisualTimer > 0.0f) {
+            attackVisualTimer -= dt;
+        }
+
+        if (app.IsKeyPressed(engine::Key::Up)) {
+            player.isAttacking = true;
+            player.attackAnimation.Restart();
+            attackVisualTimer = attackVisualDuration;
+
+            const engine::Rect attackBounds = AttackBounds(player);
+            for (Enemy& enemy : enemies) {
+                if (!enemy.alive) {
+                    continue;
+                }
+                if (engine::Intersects(attackBounds, EnemyBounds(enemy))) {
+                    --enemy.health;
+                    enemy.isHurt = true;
+                    enemy.hurtAnimation.Restart();
+                    if (enemy.health <= 0) {
+                        enemy.alive = false;
+                        enemy.isHurt = false;
+                        enemy.defeatAnimation.Restart();
+                    }
+                }
+            }
+        }
+
+        // --- player animation selection: attacking beats moving beats idle ---
+        if (player.isAttacking) {
+            player.attackAnimation.Update(dt);
+            if (player.attackAnimation.IsComplete()) {
+                player.isAttacking = false;
+            }
+        } else if (isMoving) {
+            player.walkAnimation.Update(dt);
+        } else {
+            player.idleAnimation.Update(dt);
+        }
+
+        // --- enemies drift slowly toward the player and animate accordingly ---
         for (Enemy& enemy : enemies) {
             if (!enemy.alive) {
+                if (!enemy.defeatAnimation.IsComplete()) {
+                    enemy.defeatAnimation.Update(dt);
+                }
                 continue;
             }
 
@@ -130,30 +204,13 @@ int main() {
                 enemy.y += (dy / distance) * enemySpeed * dt;
             }
 
-            if (enemy.hurtFlashTimer > 0.0f) {
-                enemy.hurtFlashTimer -= dt;
-            }
-        }
-
-        // --- attack: one dedicated key, one damage evaluation per press ---
-        if (attackVisualTimer > 0.0f) {
-            attackVisualTimer -= dt;
-        }
-
-        if (app.IsKeyPressed(engine::Key::Up)) {
-            attackVisualTimer = attackVisualDuration;
-            const engine::Rect attackBounds = AttackBounds(player);
-            for (Enemy& enemy : enemies) {
-                if (!enemy.alive) {
-                    continue;
+            if (enemy.isHurt) {
+                enemy.hurtAnimation.Update(dt);
+                if (enemy.hurtAnimation.IsComplete()) {
+                    enemy.isHurt = false;
                 }
-                if (engine::Intersects(attackBounds, EnemyBounds(enemy))) {
-                    --enemy.health;
-                    enemy.hurtFlashTimer = hurtFlashDuration;
-                    if (enemy.health <= 0) {
-                        enemy.alive = false;
-                    }
-                }
+            } else {
+                enemy.idleAnimation.Update(dt);
             }
         }
 
@@ -174,11 +231,13 @@ int main() {
         app.DrawRectangle(exitX, exitY, exitSize, exitSize, allEnemiesDefeated ? exitOpenColor : exitLockedColor);
 
         for (const Enemy& enemy : enemies) {
-            if (!enemy.alive) {
-                continue;
+            if (enemy.alive) {
+                const engine::Rect frame =
+                    enemy.isHurt ? enemy.hurtAnimation.CurrentFrameRect() : enemy.idleAnimation.CurrentFrameRect();
+                app.DrawSpriteRegion(enemyTexture, frame, enemy.x, enemy.y);
+            } else if (!enemy.defeatAnimation.IsComplete()) {
+                app.DrawSpriteRegion(enemyTexture, enemy.defeatAnimation.CurrentFrameRect(), enemy.x, enemy.y);
             }
-            const engine::Color color = enemy.hurtFlashTimer > 0.0f ? enemyHurtColor : enemyColor;
-            app.DrawRectangle(enemy.x, enemy.y, enemySize, enemySize, color);
         }
 
         if (attackVisualTimer > 0.0f) {
@@ -186,7 +245,16 @@ int main() {
             app.DrawRectangle(attackBounds.x, attackBounds.y, attackBounds.width, attackBounds.height, attackColor);
         }
 
-        app.DrawSprite(playerTexture, player.x, player.y);
+        engine::Rect playerFrame = player.isAttacking  ? player.attackAnimation.CurrentFrameRect()
+                                    : isMoving          ? player.walkAnimation.CurrentFrameRect()
+                                                        : player.idleAnimation.CurrentFrameRect();
+        if (player.facing == Facing::Left) {
+            // Negative source width flips the sprite horizontally — raylib's
+            // DrawTextureRec/DrawTexturePro already support this, so no
+            // engine change was needed to add facing.
+            playerFrame.width = -playerFrame.width;
+        }
+        app.DrawSpriteRegion(playerTexture, playerFrame, player.x, player.y);
 
         app.DrawText("WASD to move, Up arrow to attack", 10, 4, 18, engine::colors::DarkGray);
 
