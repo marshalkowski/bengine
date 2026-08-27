@@ -143,6 +143,11 @@ void Engine::DrawSprite(TextureHandle texture, float x, float y) {
     ::DrawTextureV(impl_->textures[texture.index_], ::Vector2{x, y}, ::Color{255, 255, 255, 255});
 }
 
+void Engine::DrawSpriteRegion(TextureHandle texture, Rect sourceRect, float x, float y) {
+    const ::Rectangle source{sourceRect.x, sourceRect.y, sourceRect.width, sourceRect.height};
+    ::DrawTextureRec(impl_->textures[texture.index_], source, ::Vector2{x, y}, ::Color{255, 255, 255, 255});
+}
+
 int Engine::LoadedTextureCount() const {
     return static_cast<int>(impl_->textures.size());
 }

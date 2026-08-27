@@ -35,6 +35,7 @@ add_subdirectory(examples/06_input_states)
 add_subdirectory(examples/07_primitives)
 add_subdirectory(examples/08_geometry)
 add_subdirectory(examples/09_float_rendering)
+add_subdirectory(examples/10_animation_basic)
 
 # prototypes/: small games combining existing capabilities, used to surface
 # what the engine needs next. Each is its own executable, just like a real game.

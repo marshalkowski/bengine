@@ -105,6 +105,10 @@ public:
     int TextureHeight(TextureHandle texture) const;
     void DrawSprite(TextureHandle texture, float x, float y);
 
+    // Draws only sourceRect (in texture pixel coordinates) from texture at
+    // the given destination position — the basis for sprite-sheet frames.
+    void DrawSpriteRegion(TextureHandle texture, Rect sourceRect, float x, float y);
+
     // Diagnostic: how many distinct textures are currently loaded. Useful
     // for verifying that repeated LoadTexture calls are being deduplicated;
     // not meant to be a basis for game logic.
