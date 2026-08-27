@@ -11,21 +11,6 @@
 
 namespace {
 
-// Same shape as prototype_01_continuous's local overlap helper, reused
-// verbatim here to test whether it recurs naturally across prototypes.
-// See the post-prototype review for whether that earns it a home in the
-// engine.
-struct Rect {
-    float x, y, width, height;
-};
-
-bool Intersects(const Rect& a, const Rect& b) {
-    return a.x < b.x + b.width &&
-           a.x + a.width > b.x &&
-           a.y < b.y + b.height &&
-           a.y + a.height > b.y;
-}
-
 constexpr int windowWidth = 800;
 constexpr int windowHeight = 450;
 constexpr int hudHeight = 44;
@@ -129,13 +114,13 @@ int main() {
                 continue;
             }
 
-            const Rect projectileBounds{projectile.x, projectile.y, projectileSize, projectileSize};
+            const engine::Rect projectileBounds{projectile.x, projectile.y, projectileSize, projectileSize};
             for (Target& target : targets) {
                 if (!target.alive) {
                     continue;
                 }
-                const Rect targetBounds{target.x, target.y, targetSize, targetSize};
-                if (Intersects(projectileBounds, targetBounds)) {
+                const engine::Rect targetBounds{target.x, target.y, targetSize, targetSize};
+                if (engine::Intersects(projectileBounds, targetBounds)) {
                     target.alive = false;
                     projectile.active = false;
                     ++score;

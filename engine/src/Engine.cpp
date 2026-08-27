@@ -37,6 +37,13 @@ std::string ToString(float value, int decimalPlaces) {
     return std::string(buffer);
 }
 
+bool Intersects(const Rect& a, const Rect& b) {
+    return a.x < b.x + b.width &&
+           a.x + a.width > b.x &&
+           a.y < b.y + b.height &&
+           a.y + a.height > b.y;
+}
+
 // The engine's texture resource manager: owns every loaded texture for the
 // lifetime of the Engine and deduplicates repeated LoadTexture calls for the
 // same path. Deliberately just a vector + a path->index cache for now — no

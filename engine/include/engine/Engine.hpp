@@ -25,6 +25,17 @@ inline constexpr Color White{245, 245, 245, 255};
 inline constexpr Color DarkGray{80, 80, 80, 255};
 } // namespace colors
 
+// Axis-aligned rectangle, in whatever coordinate space the caller is
+// working in. Pure data — no rendering or backend dependency.
+struct Rect {
+    float x, y, width, height;
+};
+
+// True if a and b share a region of positive area. Rectangles that only
+// touch along an edge or at a corner (zero-width or zero-height overlap)
+// are NOT considered intersecting.
+bool Intersects(const Rect& a, const Rect& b);
+
 // Physical keyboard keys. Only the keys concrete examples have needed so far;
 // extend as new examples require more.
 enum class Key {

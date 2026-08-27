@@ -33,6 +33,7 @@ add_subdirectory(examples/04_resources_basic)
 add_subdirectory(examples/05_resources_cache)
 add_subdirectory(examples/06_input_states)
 add_subdirectory(examples/07_primitives)
+add_subdirectory(examples/08_geometry)
 
 # prototypes/: small games combining existing capabilities, used to surface
 # what the engine needs next. Each is its own executable, just like a real game.

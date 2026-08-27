@@ -11,20 +11,6 @@
 
 namespace {
 
-// Prototype-local axis-aligned bounds + overlap test. The engine has no
-// equivalent concept yet — see the post-prototype review for whether this
-// use turned out to justify one.
-struct Rect {
-    float x, y, width, height;
-};
-
-bool Intersects(const Rect& a, const Rect& b) {
-    return a.x < b.x + b.width &&
-           a.x + a.width > b.x &&
-           a.y < b.y + b.height &&
-           a.y + a.height > b.y;
-}
-
 constexpr int windowWidth = 800;
 constexpr int windowHeight = 450;
 constexpr int hudHeight = 44;
@@ -100,19 +86,19 @@ int main() {
             hazardVelocity = hazardSpeed;
         }
 
-        // --- overlap checks (local to the prototype) ---
-        const Rect playerBounds{playerX, playerY, playerSize, playerSize};
+        // --- overlap checks, using the engine's geometry utility ---
+        const engine::Rect playerBounds{playerX, playerY, playerSize, playerSize};
 
         if (!collected) {
-            const Rect collectibleBounds{collectibleX, collectibleY, collectibleSize, collectibleSize};
-            if (Intersects(playerBounds, collectibleBounds)) {
+            const engine::Rect collectibleBounds{collectibleX, collectibleY, collectibleSize, collectibleSize};
+            if (engine::Intersects(playerBounds, collectibleBounds)) {
                 collected = true;
                 ++score;
             }
         }
 
-        const Rect hazardBounds{hazardX, hazardY, hazardSize, hazardSize};
-        const bool isHitting = Intersects(playerBounds, hazardBounds);
+        const engine::Rect hazardBounds{hazardX, hazardY, hazardSize, hazardSize};
+        const bool isHitting = engine::Intersects(playerBounds, hazardBounds);
         if (isHitting && !wasHitting) {
             ++hitCount;
             playerX = playerStartX;
