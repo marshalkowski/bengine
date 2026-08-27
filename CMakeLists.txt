@@ -38,3 +38,4 @@ add_subdirectory(examples/07_primitives)
 # what the engine needs next. Each is its own executable, just like a real game.
 add_subdirectory(prototypes/prototype_00_topdown)
 add_subdirectory(prototypes/prototype_01_continuous)
+add_subdirectory(prototypes/prototype_02_projectiles)
