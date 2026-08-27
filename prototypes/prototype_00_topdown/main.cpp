@@ -23,6 +23,12 @@ enum class Cell {
     Goal,
 };
 
+// Grid cells are flat colors, drawn as rectangles through the engine's
+// primitive API — no throwaway per-cell texture assets needed for this.
+constexpr engine::Color floorColor{230, 220, 200, 255};
+constexpr engine::Color wallColor{90, 74, 58, 255};
+constexpr engine::Color goalColor{255, 196, 0, 255};
+
 // '#' = wall, '.' = floor, 'G' = goal. Border is walled in on all sides.
 constexpr std::array<const char*, gridRows> roomLayout = {
     "##########",
@@ -62,9 +68,6 @@ int main() {
     engine::Engine app({.width = windowWidth, .height = windowHeight, .title = "Prototype 00 - Topdown"});
 
     const std::string assetDir = PROTOTYPE_TOPDOWN_ASSET_DIR;
-    const engine::TextureHandle floorTexture = app.LoadTexture((assetDir + "/floor.png").c_str());
-    const engine::TextureHandle wallTexture = app.LoadTexture((assetDir + "/wall.png").c_str());
-    const engine::TextureHandle goalTexture = app.LoadTexture((assetDir + "/goal.png").c_str());
     const engine::TextureHandle playerTexture = app.LoadTexture((assetDir + "/player.png").c_str());
 
     int playerCol = 1;
@@ -108,13 +111,13 @@ int main() {
                 const int y = hudHeight + row * cellSize;
                 switch (CellAt(col, row)) {
                     case Cell::Wall:
-                        app.DrawSprite(wallTexture, x, y);
+                        app.DrawRectangle(x, y, cellSize, cellSize, wallColor);
                         break;
                     case Cell::Goal:
-                        app.DrawSprite(goalTexture, x, y);
+                        app.DrawRectangle(x, y, cellSize, cellSize, goalColor);
                         break;
                     case Cell::Floor:
-                        app.DrawSprite(floorTexture, x, y);
+                        app.DrawRectangle(x, y, cellSize, cellSize, floorColor);
                         break;
                 }
             }

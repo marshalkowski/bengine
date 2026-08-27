@@ -104,6 +104,14 @@ void Engine::DrawText(const std::string& text, int x, int y, int fontSize, Color
     DrawText(text.c_str(), x, y, fontSize, color);
 }
 
+void Engine::DrawRectangle(int x, int y, int width, int height, Color color) {
+    ::DrawRectangle(x, y, width, height, ToRaylibColor(color));
+}
+
+void Engine::DrawLine(int x1, int y1, int x2, int y2, Color color) {
+    ::DrawLine(x1, y1, x2, y2, ToRaylibColor(color));
+}
+
 TextureHandle Engine::LoadTexture(const char* filePath) {
     const auto existing = impl_->textureIndexByPath.find(filePath);
     if (existing != impl_->textureIndexByPath.end()) {

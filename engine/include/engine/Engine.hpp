@@ -81,6 +81,8 @@ public:
     void Clear(Color color);
     void DrawText(const char* text, int x, int y, int fontSize, Color color);
     void DrawText(const std::string& text, int x, int y, int fontSize, Color color);
+    void DrawRectangle(int x, int y, int width, int height, Color color);
+    void DrawLine(int x1, int y1, int x2, int y2, Color color);
 
     // Loads a texture and hands back a handle to it. The engine owns the
     // texture from this point on; there is no explicit unload — all loaded
