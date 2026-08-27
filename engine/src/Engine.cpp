@@ -44,6 +44,45 @@ bool Intersects(const Rect& a, const Rect& b) {
            a.y + a.height > b.y;
 }
 
+Animation::Animation(const AnimationClip& clip)
+    : clip_(clip), currentFrame_(0), accumulatedTime_(0.0f), completed_(false) {}
+
+void Animation::Update(float deltaTime) {
+    if (completed_) {
+        return;
+    }
+
+    accumulatedTime_ += deltaTime;
+    while (accumulatedTime_ >= clip_.frameDuration) {
+        accumulatedTime_ -= clip_.frameDuration;
+        ++currentFrame_;
+        if (currentFrame_ >= clip_.frameCount) {
+            if (clip_.loop) {
+                currentFrame_ = 0;
+            } else {
+                currentFrame_ = clip_.frameCount - 1;
+                completed_ = true;
+                break;
+            }
+        }
+    }
+}
+
+void Animation::Restart() {
+    currentFrame_ = 0;
+    accumulatedTime_ = 0.0f;
+    completed_ = false;
+}
+
+bool Animation::IsComplete() const {
+    return completed_;
+}
+
+Rect Animation::CurrentFrameRect() const {
+    const int frameIndex = clip_.firstFrame + currentFrame_;
+    return Rect{frameIndex * clip_.frameWidth, 0.0f, clip_.frameWidth, clip_.frameHeight};
+}
+
 // The engine's texture resource manager: owns every loaded texture for the
 // lifetime of the Engine and deduplicates repeated LoadTexture calls for the
 // same path. Deliberately just a vector + a path->index cache for now — no

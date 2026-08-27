@@ -36,6 +36,46 @@ struct Rect {
 // are NOT considered intersecting.
 bool Intersects(const Rect& a, const Rect& b);
 
+// Static definition of a sprite-sheet animation: a run of equal-size,
+// equal-duration frames laid out horizontally in one row, starting at
+// firstFrame. Pure data — reusable across any number of Animation
+// instances playing it, and independent of any specific texture.
+struct AnimationClip {
+    int firstFrame;
+    int frameCount;
+    float frameWidth;
+    float frameHeight;
+    float frameDuration;
+    bool loop;
+};
+
+// Playback state for an AnimationClip. Advances via explicit Update() calls
+// using caller-supplied delta time — never reads time itself. Only
+// produces the current frame's source Rect; drawing and texture ownership
+// remain the application's responsibility.
+class Animation {
+public:
+    explicit Animation(const AnimationClip& clip);
+
+    void Update(float deltaTime);
+
+    // Returns to frame zero and clears completion, whether or not the
+    // clip had finished.
+    void Restart();
+
+    // Always false for a looping clip. For a one-shot clip, true once
+    // playback has reached and held on the final frame.
+    bool IsComplete() const;
+
+    Rect CurrentFrameRect() const;
+
+private:
+    AnimationClip clip_;
+    int currentFrame_;
+    float accumulatedTime_;
+    bool completed_;
+};
+
 // Physical keyboard keys. Only the keys concrete examples have needed so far;
 // extend as new examples require more.
 enum class Key {
