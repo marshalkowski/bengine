@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <utility>
+#include <vector>
 
 #include "raylib.h"
 
@@ -35,32 +36,28 @@ std::string ToString(float value, int decimalPlaces) {
     return std::string(buffer);
 }
 
-struct Texture::Impl {
-    ::Texture2D raylibTexture;
+// The engine's texture resource manager: owns every loaded texture for the
+// lifetime of the Engine. Deliberately just a flat vector for now — no
+// caching/dedup and no per-texture unload, since nothing yet needs either.
+struct Engine::Impl {
+    std::vector<::Texture2D> textures;
 
-    explicit Impl(::Texture2D texture) : raylibTexture(texture) {}
-    ~Impl() { UnloadTexture(raylibTexture); }
+    ~Impl() {
+        for (::Texture2D& texture : textures) {
+            UnloadTexture(texture);
+        }
+    }
 };
 
-Texture::Texture(std::unique_ptr<Impl> impl) : impl_(std::move(impl)) {}
-Texture::~Texture() = default;
-Texture::Texture(Texture&&) noexcept = default;
-Texture& Texture::operator=(Texture&&) noexcept = default;
-
-int Texture::Width() const {
-    return impl_->raylibTexture.width;
-}
-
-int Texture::Height() const {
-    return impl_->raylibTexture.height;
-}
-
-Engine::Engine(const WindowConfig& config) {
+Engine::Engine(const WindowConfig& config) : impl_(std::make_unique<Impl>()) {
     InitWindow(config.width, config.height, config.title);
     SetTargetFPS(config.targetFPS);
 }
 
 Engine::~Engine() {
+    // Textures must be unloaded while the GL context is still alive, so
+    // destroy the resource manager before tearing down the window.
+    impl_.reset();
     CloseWindow();
 }
 
@@ -96,12 +93,21 @@ void Engine::DrawText(const std::string& text, int x, int y, int fontSize, Color
     DrawText(text.c_str(), x, y, fontSize, color);
 }
 
-Texture Engine::LoadTexture(const char* filePath) {
-    return Texture(std::make_unique<Texture::Impl>(::LoadTexture(filePath)));
+TextureHandle Engine::LoadTexture(const char* filePath) {
+    impl_->textures.push_back(::LoadTexture(filePath));
+    return TextureHandle(impl_->textures.size() - 1);
 }
 
-void Engine::DrawSprite(const Texture& texture, int x, int y) {
-    ::DrawTexture(texture.impl_->raylibTexture, x, y, ::Color{255, 255, 255, 255});
+int Engine::TextureWidth(TextureHandle texture) const {
+    return impl_->textures[texture.index_].width;
+}
+
+int Engine::TextureHeight(TextureHandle texture) const {
+    return impl_->textures[texture.index_].height;
+}
+
+void Engine::DrawSprite(TextureHandle texture, int x, int y) {
+    ::DrawTexture(impl_->textures[texture.index_], x, y, ::Color{255, 255, 255, 255});
 }
 
 } // namespace engine

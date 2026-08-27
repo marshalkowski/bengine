@@ -10,10 +10,10 @@ int main() {
     engine::Engine app({.width = windowWidth, .height = windowHeight, .title = "03 - Input"});
 
     const std::string spritePath = std::string(INPUT_ASSET_DIR) + "/sprite.png";
-    engine::Texture sprite = app.LoadTexture(spritePath.c_str());
+    engine::TextureHandle sprite = app.LoadTexture(spritePath.c_str());
 
-    float x = (windowWidth - sprite.Width()) / 2.0f;
-    float y = (windowHeight - sprite.Height()) / 2.0f;
+    float x = (windowWidth - app.TextureWidth(sprite)) / 2.0f;
+    float y = (windowHeight - app.TextureHeight(sprite)) / 2.0f;
 
     while (!app.ShouldClose()) {
         const float dt = app.DeltaTime();

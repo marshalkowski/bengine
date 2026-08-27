@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <string>
 
@@ -37,28 +38,18 @@ enum class Key {
     Right,
 };
 
-// RAII handle for a texture loaded on the GPU. Only Engine can create one
-// (via LoadTexture); the backing resource is released when it goes out of scope.
-class Texture {
-public:
-    ~Texture();
-
-    Texture(Texture&&) noexcept;
-    Texture& operator=(Texture&&) noexcept;
-
-    Texture(const Texture&) = delete;
-    Texture& operator=(const Texture&) = delete;
-
-    int Width() const;
-    int Height() const;
-
+// Opaque reference to a texture resource owned by the engine. Carries no
+// data or methods of its own — application code copies/stores/passes it,
+// but only Engine can create one or make sense of what it refers to.
+// Textures are loaded once and live for the lifetime of the Engine that
+// loaded them (see Engine::LoadTexture).
+class TextureHandle {
 private:
     friend class Engine;
 
-    struct Impl;
-    explicit Texture(std::unique_ptr<Impl> impl);
+    explicit TextureHandle(std::size_t index) : index_(index) {}
 
-    std::unique_ptr<Impl> impl_;
+    std::size_t index_;
 };
 
 // Owns window + frame lifecycle. Does not own main() or the game loop itself —
@@ -85,8 +76,17 @@ public:
     void DrawText(const char* text, int x, int y, int fontSize, Color color);
     void DrawText(const std::string& text, int x, int y, int fontSize, Color color);
 
-    Texture LoadTexture(const char* filePath);
-    void DrawSprite(const Texture& texture, int x, int y);
+    // Loads a texture and hands back a handle to it. The engine owns the
+    // texture from this point on; there is no explicit unload — all loaded
+    // textures are released when this Engine is destroyed.
+    TextureHandle LoadTexture(const char* filePath);
+    int TextureWidth(TextureHandle texture) const;
+    int TextureHeight(TextureHandle texture) const;
+    void DrawSprite(TextureHandle texture, int x, int y);
+
+private:
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
 };
 
 } // namespace engine

@@ -6,10 +6,10 @@ int main() {
     engine::Engine app({.width = 800, .height = 450, .title = "01 - Hello Sprite"});
 
     const std::string spritePath = std::string(HELLO_SPRITE_ASSET_DIR) + "/sprite.png";
-    engine::Texture sprite = app.LoadTexture(spritePath.c_str());
+    engine::TextureHandle sprite = app.LoadTexture(spritePath.c_str());
 
-    const int spriteX = (800 - sprite.Width()) / 2;
-    const int spriteY = (450 - sprite.Height()) / 2;
+    const int spriteX = (800 - app.TextureWidth(sprite)) / 2;
+    const int spriteY = (450 - app.TextureHeight(sprite)) / 2;
 
     while (!app.ShouldClose()) {
         app.BeginFrame();
