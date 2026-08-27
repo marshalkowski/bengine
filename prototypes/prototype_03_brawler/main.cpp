@@ -93,6 +93,7 @@ struct Enemy {
     int health = enemyMaxHealth;
     bool alive = true;
     bool isHurt = false;
+    Facing facing = Facing::Right;
     engine::Animation idleAnimation{skeletonIdleClip};
     engine::Animation hurtAnimation{skeletonHurtClip};
     engine::Animation defeatAnimation{skeletonDefeatClip};
@@ -254,6 +255,13 @@ int main() {
                 enemy.y += (dy / distance) * enemySpeed * dt;
             }
 
+            // Face toward the player, same left/right convention as the player.
+            if (dx < 0.0f) {
+                enemy.facing = Facing::Left;
+            } else if (dx > 0.0f) {
+                enemy.facing = Facing::Right;
+            }
+
             if (enemy.isHurt) {
                 enemy.hurtAnimation.Update(dt);
                 if (enemy.hurtAnimation.IsComplete()) {
@@ -283,12 +291,18 @@ int main() {
         for (const Enemy& enemy : enemies) {
             if (enemy.alive) {
                 const engine::TextureHandle enemyTexture = enemy.isHurt ? skeletonHurtTexture : skeletonIdleTexture;
-                const engine::Rect frame =
+                engine::Rect frame =
                     enemy.isHurt ? enemy.hurtAnimation.CurrentFrameRect() : enemy.idleAnimation.CurrentFrameRect();
+                if (enemy.facing == Facing::Left) {
+                    frame.width = -frame.width;
+                }
                 app.DrawSpriteRegion(enemyTexture, frame, SpriteDrawX(enemy.x, enemySize), enemy.y);
             } else if (!enemy.defeatAnimation.IsComplete()) {
-                app.DrawSpriteRegion(skeletonDefeatTexture, enemy.defeatAnimation.CurrentFrameRect(),
-                                     SpriteDrawX(enemy.x, enemySize), enemy.y);
+                engine::Rect frame = enemy.defeatAnimation.CurrentFrameRect();
+                if (enemy.facing == Facing::Left) {
+                    frame.width = -frame.width;
+                }
+                app.DrawSpriteRegion(skeletonDefeatTexture, frame, SpriteDrawX(enemy.x, enemySize), enemy.y);
             }
         }
 
