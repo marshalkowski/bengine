@@ -23,9 +23,15 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(raylib)
 
 add_subdirectory(engine)
+
+# examples/: narrow, one-capability-at-a-time demonstrations of the engine API.
 add_subdirectory(examples/00_hello_engine)
 add_subdirectory(examples/01_hello_sprite)
 add_subdirectory(examples/02_time)
 add_subdirectory(examples/03_input)
 add_subdirectory(examples/04_resources_basic)
 add_subdirectory(examples/05_resources_cache)
+
+# prototypes/: small games combining existing capabilities, used to surface
+# what the engine needs next. Each is its own executable, just like a real game.
+add_subdirectory(prototypes/prototype_00_topdown)
