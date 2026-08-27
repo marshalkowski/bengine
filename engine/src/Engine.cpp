@@ -84,6 +84,14 @@ bool Engine::IsKeyDown(Key key) const {
     return ::IsKeyDown(ToRaylibKey(key));
 }
 
+bool Engine::IsKeyPressed(Key key) const {
+    return ::IsKeyPressed(ToRaylibKey(key));
+}
+
+bool Engine::IsKeyReleased(Key key) const {
+    return ::IsKeyReleased(ToRaylibKey(key));
+}
+
 void Engine::Clear(Color color) {
     ClearBackground(ToRaylibColor(color));
 }

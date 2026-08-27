@@ -72,6 +72,12 @@ public:
     // True every frame the key is physically held down.
     bool IsKeyDown(Key key) const;
 
+    // True only during the frame the key transitions from up to down.
+    bool IsKeyPressed(Key key) const;
+
+    // True only during the frame the key transitions from down to up.
+    bool IsKeyReleased(Key key) const;
+
     void Clear(Color color);
     void DrawText(const char* text, int x, int y, int fontSize, Color color);
     void DrawText(const std::string& text, int x, int y, int fontSize, Color color);

@@ -49,15 +49,11 @@ bool IsTraversable(int col, int row) {
     return CellAt(col, row) != Cell::Wall;
 }
 
-// The engine's IsKeyDown is level-triggered (true every frame the key is
-// held). Grid movement wants one step per press, so this prototype tracks
-// last frame's state itself to detect the rising edge — the engine has no
-// "just pressed" concept, and nothing here requires it to.
+// One grid step per key press, via the engine's IsKeyPressed.
 struct MovementKey {
     engine::Key key;
     int deltaCol;
     int deltaRow;
-    bool wasDown = false;
 };
 
 } // namespace
@@ -75,24 +71,20 @@ int main() {
     int playerRow = 1;
     bool goalReached = false;
 
-    std::array<MovementKey, 8> movementKeys = {{
-        {engine::Key::Up, 0, -1, false},
-        {engine::Key::W, 0, -1, false},
-        {engine::Key::Down, 0, 1, false},
-        {engine::Key::S, 0, 1, false},
-        {engine::Key::Left, -1, 0, false},
-        {engine::Key::A, -1, 0, false},
-        {engine::Key::Right, 1, 0, false},
-        {engine::Key::D, 1, 0, false},
+    constexpr std::array<MovementKey, 8> movementKeys = {{
+        {engine::Key::Up, 0, -1},
+        {engine::Key::W, 0, -1},
+        {engine::Key::Down, 0, 1},
+        {engine::Key::S, 0, 1},
+        {engine::Key::Left, -1, 0},
+        {engine::Key::A, -1, 0},
+        {engine::Key::Right, 1, 0},
+        {engine::Key::D, 1, 0},
     }};
 
     while (!app.ShouldClose()) {
-        for (MovementKey& moveKey : movementKeys) {
-            const bool isDown = app.IsKeyDown(moveKey.key);
-            const bool justPressed = isDown && !moveKey.wasDown;
-            moveKey.wasDown = isDown;
-
-            if (!justPressed || goalReached) {
+        for (const MovementKey& moveKey : movementKeys) {
+            if (!app.IsKeyPressed(moveKey.key) || goalReached) {
                 continue;
             }
 
