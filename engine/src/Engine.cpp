@@ -111,12 +111,12 @@ void Engine::DrawText(const std::string& text, int x, int y, int fontSize, Color
     DrawText(text.c_str(), x, y, fontSize, color);
 }
 
-void Engine::DrawRectangle(int x, int y, int width, int height, Color color) {
-    ::DrawRectangle(x, y, width, height, ToRaylibColor(color));
+void Engine::DrawRectangle(float x, float y, float width, float height, Color color) {
+    ::DrawRectangleRec(::Rectangle{x, y, width, height}, ToRaylibColor(color));
 }
 
-void Engine::DrawLine(int x1, int y1, int x2, int y2, Color color) {
-    ::DrawLine(x1, y1, x2, y2, ToRaylibColor(color));
+void Engine::DrawLine(float x1, float y1, float x2, float y2, Color color) {
+    ::DrawLineV(::Vector2{x1, y1}, ::Vector2{x2, y2}, ToRaylibColor(color));
 }
 
 TextureHandle Engine::LoadTexture(const char* filePath) {
@@ -139,8 +139,8 @@ int Engine::TextureHeight(TextureHandle texture) const {
     return impl_->textures[texture.index_].height;
 }
 
-void Engine::DrawSprite(TextureHandle texture, int x, int y) {
-    ::DrawTexture(impl_->textures[texture.index_], x, y, ::Color{255, 255, 255, 255});
+void Engine::DrawSprite(TextureHandle texture, float x, float y) {
+    ::DrawTextureV(impl_->textures[texture.index_], ::Vector2{x, y}, ::Color{255, 255, 255, 255});
 }
 
 int Engine::LoadedTextureCount() const {

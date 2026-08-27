@@ -35,14 +35,12 @@ int main() {
         app.BeginFrame();
         app.Clear(engine::colors::White);
 
-        app.DrawRectangle(static_cast<int>(stationary.x), static_cast<int>(stationary.y),
-                           static_cast<int>(stationary.width), static_cast<int>(stationary.height),
+        app.DrawRectangle(stationary.x, stationary.y, stationary.width, stationary.height,
                            engine::Color{70, 110, 180, 255});
 
         const engine::Color movingColor =
             overlapping ? engine::Color{200, 60, 60, 255} : engine::Color{60, 140, 90, 255};
-        app.DrawRectangle(static_cast<int>(x), static_cast<int>(y), static_cast<int>(movingSize),
-                           static_cast<int>(movingSize), movingColor);
+        app.DrawRectangle(x, y, movingSize, movingSize, movingColor);
 
         app.DrawText("Move the rectangle with WASD/Arrows", 10, 4, 18, engine::colors::DarkGray);
         app.DrawText(overlapping ? "Intersects: yes" : "Intersects: no", 10, 24, 18, engine::colors::DarkGray);

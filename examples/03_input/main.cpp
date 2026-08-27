@@ -33,7 +33,7 @@ int main() {
 
         app.BeginFrame();
         app.Clear(engine::colors::White);
-        app.DrawSprite(sprite, static_cast<int>(x), static_cast<int>(y));
+        app.DrawSprite(sprite, x, y);
         app.EndFrame();
     }
 

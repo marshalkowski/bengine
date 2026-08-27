@@ -110,15 +110,12 @@ int main() {
         app.Clear(engine::colors::White);
 
         if (!collected) {
-            app.DrawRectangle(static_cast<int>(collectibleX), static_cast<int>(collectibleY),
-                               static_cast<int>(collectibleSize), static_cast<int>(collectibleSize),
-                               collectibleColor);
+            app.DrawRectangle(collectibleX, collectibleY, collectibleSize, collectibleSize, collectibleColor);
         }
 
-        app.DrawRectangle(static_cast<int>(hazardX), static_cast<int>(hazardY),
-                           static_cast<int>(hazardSize), static_cast<int>(hazardSize), hazardColor);
+        app.DrawRectangle(hazardX, hazardY, hazardSize, hazardSize, hazardColor);
 
-        app.DrawSprite(playerTexture, static_cast<int>(playerX), static_cast<int>(playerY));
+        app.DrawSprite(playerTexture, playerX, playerY);
 
         app.DrawText("WASD/Arrows to move. Grab the gold square, avoid the red one.",
                      10, 4, 18, engine::colors::DarkGray);

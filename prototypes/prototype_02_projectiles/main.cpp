@@ -136,17 +136,15 @@ int main() {
 
         for (const Target& target : targets) {
             if (target.alive) {
-                app.DrawRectangle(static_cast<int>(target.x), static_cast<int>(target.y),
-                                   static_cast<int>(targetSize), static_cast<int>(targetSize), targetColor);
+                app.DrawRectangle(target.x, target.y, targetSize, targetSize, targetColor);
             }
         }
 
         for (const Projectile& projectile : projectiles) {
-            app.DrawRectangle(static_cast<int>(projectile.x), static_cast<int>(projectile.y),
-                               static_cast<int>(projectileSize), static_cast<int>(projectileSize), projectileColor);
+            app.DrawRectangle(projectile.x, projectile.y, projectileSize, projectileSize, projectileColor);
         }
 
-        app.DrawSprite(playerTexture, static_cast<int>(playerX), static_cast<int>(playerY));
+        app.DrawSprite(playerTexture, playerX, playerY);
 
         const int targetsRemaining = static_cast<int>(
             std::count_if(targets.begin(), targets.end(), [](const Target& t) { return t.alive; }));
