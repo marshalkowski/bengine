@@ -37,3 +37,4 @@ add_subdirectory(examples/07_primitives)
 # prototypes/: small games combining existing capabilities, used to surface
 # what the engine needs next. Each is its own executable, just like a real game.
 add_subdirectory(prototypes/prototype_00_topdown)
+add_subdirectory(prototypes/prototype_01_continuous)
