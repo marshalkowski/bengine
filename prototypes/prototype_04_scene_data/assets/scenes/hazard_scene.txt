@@ -1,0 +1,29 @@
+# prototype_04_scene_data: Hazard scene content.
+#
+# One directive per line, whitespace-separated. '#' starts a comment.
+# This is the entire format -- see LoadHazardSceneData in main.cpp for
+# the directives this scene understands. Note this is a DIFFERENT set of
+# directives than combat_scene.txt (no "enemy", no "survive_seconds"
+# there) -- the two scenes were not forced into one shared schema.
+#
+# bounds x y width height                    -- playfield rectangle entities are clamped to
+# player_spawn x y                            -- player's starting position (also the respawn point on a hazard hit)
+# survive_seconds seconds                     -- how long the player must go without a hazard hit before the exit unlocks
+# hazard axis anchorX anchorY range speed     -- one patrolling hazard (repeatable)
+#   axis: "horizontal" or "vertical" -- which coordinate oscillates
+#   anchorX/anchorY: the hazard's rect position at the midpoint of its patrol
+#   range: how far the hazard travels from the anchor before reversing (pixels)
+#   speed: patrol speed (pixels/second); hazard size itself is a code constant, not data
+# exit x y width height                       -- the rectangle that ends the scene once unlocked
+
+bounds 0 44 800 406
+
+player_spawn 80 200
+
+survive_seconds 6
+
+hazard horizontal 400 100 140 90
+hazard vertical 250 250 90 70
+hazard horizontal 600 350 120 110
+
+exit 720 180 50 50

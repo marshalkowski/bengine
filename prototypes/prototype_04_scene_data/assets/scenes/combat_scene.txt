@@ -1,0 +1,19 @@
+# prototype_04_scene_data: Combat scene content.
+#
+# One directive per line, whitespace-separated. '#' starts a comment.
+# This is the entire format -- see LoadCombatSceneData in main.cpp for
+# the directives this scene understands.
+#
+# bounds x y width height        -- playfield rectangle entities are clamped to
+# player_spawn x y                -- player's starting position
+# enemy x y                       -- one enemy spawn (repeatable)
+# exit x y width height           -- the rectangle that ends the scene once unlocked
+
+bounds 0 44 800 406
+
+player_spawn 80 200
+
+enemy 500 120
+enemy 620 320
+
+exit 720 180 50 50
