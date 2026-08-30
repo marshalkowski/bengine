@@ -42,6 +42,9 @@ Desktop.ini
 # ---- Claude Code: local/session-only files ----
 # settings.local.json holds this machine's personal tool-permission choices
 # and is regenerated per user/session — not something to share via git.
-# CLAUDE.md and any project-level .claude/agents, .claude/skills, etc. are
-# NOT ignored: they document the project itself and should travel with it.
+# CLAUDE.md is local/personal notes for this machine, not shared project
+# documentation, so it's ignored too. Project-level .claude/agents,
+# .claude/skills, etc. are NOT ignored: those document the project itself
+# and should travel with it.
 .claude/settings.local.json
+CLAUDE.md
