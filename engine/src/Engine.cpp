@@ -27,6 +27,13 @@ int ToRaylibKey(engine::Key key) {
     return KEY_NULL;
 }
 
+int ToRaylibMouseButton(engine::MouseButton button) {
+    switch (button) {
+        case engine::MouseButton::Left: return MOUSE_BUTTON_LEFT;
+    }
+    return MOUSE_BUTTON_LEFT;
+}
+
 } // namespace
 
 namespace engine {
@@ -42,6 +49,11 @@ bool Intersects(const Rect& a, const Rect& b) {
            a.x + a.width > b.x &&
            a.y < b.y + b.height &&
            a.y + a.height > b.y;
+}
+
+bool Contains(const Rect& rect, float x, float y) {
+    return x >= rect.x && x < rect.x + rect.width &&
+           y >= rect.y && y < rect.y + rect.height;
 }
 
 Animation::Animation(const AnimationClip& clip)
@@ -136,6 +148,18 @@ bool Engine::IsKeyPressed(Key key) const {
 
 bool Engine::IsKeyReleased(Key key) const {
     return ::IsKeyReleased(ToRaylibKey(key));
+}
+
+float Engine::MouseX() const {
+    return ::GetMousePosition().x;
+}
+
+float Engine::MouseY() const {
+    return ::GetMousePosition().y;
+}
+
+bool Engine::IsMouseButtonPressed(MouseButton button) const {
+    return ::IsMouseButtonPressed(ToRaylibMouseButton(button));
 }
 
 void Engine::Clear(Color color) {

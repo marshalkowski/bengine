@@ -36,6 +36,13 @@ struct Rect {
 // are NOT considered intersecting.
 bool Intersects(const Rect& a, const Rect& b);
 
+// True if the zero-area point (x, y) lies within rect, treating rect's
+// right/bottom edges as exclusive. Deliberately not expressed in terms of
+// Intersects: a point has no area, so Intersects' positive-area-overlap
+// rule would call every point non-intersecting, including points well
+// inside the rectangle. This is the basis for pointer hit-testing.
+bool Contains(const Rect& rect, float x, float y);
+
 // Static definition of a sprite-sheet animation: a run of equal-size,
 // equal-duration frames laid out horizontally in one row, starting at
 // firstFrame. Pure data — reusable across any number of Animation
@@ -89,6 +96,12 @@ enum class Key {
     Right,
 };
 
+// Physical mouse buttons. Only the button a point-and-click prototype has
+// needed so far; extend as new prototypes require more (see Key above).
+enum class MouseButton {
+    Left,
+};
+
 // Opaque reference to a texture resource owned by the engine. Carries no
 // data or methods of its own — application code copies/stores/passes it,
 // but only Engine can create one or make sense of what it refers to.
@@ -128,6 +141,18 @@ public:
 
     // True only during the frame the key transitions from down to up.
     bool IsKeyReleased(Key key) const;
+
+    // Cursor position in window pixel coordinates, the same space every
+    // other x/y in this API already uses (DrawRectangle, entity positions,
+    // etc.) — so a caller can hit-test it against gameplay/UI rects with
+    // Contains() directly, no coordinate conversion.
+    float MouseX() const;
+    float MouseY() const;
+
+    // True only during the frame the button transitions from up to down —
+    // the click edge. No IsMouseButtonDown/Released yet: nothing has
+    // needed held-button or release detection so far (see MouseButton).
+    bool IsMouseButtonPressed(MouseButton button) const;
 
     void Clear(Color color);
     void DrawText(const char* text, int x, int y, int fontSize, Color color);
