@@ -48,3 +48,6 @@ Desktop.ini
 # and should travel with it.
 .claude/settings.local.json
 CLAUDE.md
+
+
+docs/prototype_*
