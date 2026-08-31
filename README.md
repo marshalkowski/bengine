@@ -33,6 +33,32 @@ cmake --build build --config Debug
 Swap `Debug` for `Release` in both the build and run commands for an
 optimized build.
 
+## Using Bengine in another project
+
+Bengine's repository root is itself a CMake dependency — add it as a
+subdirectory (e.g. as a git submodule) and link the `bengine` target:
+
+```cmake
+add_subdirectory(vendor/Bengine)
+
+target_link_libraries(MyGame
+    PRIVATE
+        bengine
+)
+```
+
+That's the entire integration: `MyGame` gets `#include <engine/Engine.hpp>`,
+the required C++20 compile feature, and raylib's linkage, all transitively
+through the `bengine` target — no raylib configuration, no reaching into
+`Bengine/engine/`, and no manual include paths.
+
+Bengine's own examples and prototypes are not built in this mode. They're
+controlled by `BENGINE_BUILD_EXAMPLES`/`BENGINE_BUILD_PROTOTYPES`, which
+default to `ON` when Bengine is configured as the top-level project (i.e.
+normal Bengine development, as in "Building and running an example" above)
+and `OFF` when it's pulled in via `add_subdirectory()` by another project.
+Either can be turned on explicitly if a consumer wants them anyway.
+
 ## Project layout
 
 - `engine/` — Bengine itself, built as a static library (`bengine`) and
