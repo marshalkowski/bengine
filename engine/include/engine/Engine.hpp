@@ -94,6 +94,7 @@ enum class Key {
     Down,
     Left,
     Right,
+    Space,
 };
 
 // Physical mouse buttons. Only the button a point-and-click prototype has
@@ -116,8 +117,29 @@ private:
     std::size_t index_;
 };
 
+// Opaque reference to a short sound effect owned by the engine. Same
+// shape and lifetime as TextureHandle: application code copies/stores/
+// passes it, only Engine can create one or make sense of it, and it
+// lives for the lifetime of the Engine that loaded it (see
+// Engine::LoadSound). Deliberately a separate type from TextureHandle
+// rather than a shared template — two resource kinds isn't enough
+// evidence to generalize the pattern, and the two are loaded from
+// separate caches (see Engine::LoadSound).
+class SoundHandle {
+private:
+    friend class Engine;
+
+    explicit SoundHandle(std::size_t index) : index_(index) {}
+
+    std::size_t index_;
+};
+
 // Owns window + frame lifecycle. Does not own main() or the game loop itself —
 // the application calls ShouldClose()/BeginFrame()/EndFrame() from its own loop.
+// Also owns the audio device: initialized alongside the window in the
+// constructor and torn down in the destructor, so no example/game needs
+// to remember to set audio up itself, same as nothing sets up the window
+// manually today.
 class Engine {
 public:
     explicit Engine(const WindowConfig& config);
@@ -178,6 +200,18 @@ public:
     // for verifying that repeated LoadTexture calls are being deduplicated;
     // not meant to be a basis for game logic.
     int LoadedTextureCount() const;
+
+    // Loads a short sound effect and hands back a handle to it, caching by
+    // filePath exactly like LoadTexture — repeated calls with the same
+    // path reuse the already-loaded sound. There is no explicit unload;
+    // all loaded sounds are released when this Engine is destroyed.
+    SoundHandle LoadSound(const char* filePath);
+
+    // Triggers playback once and returns immediately — not tied to
+    // BeginFrame/EndFrame like the Draw* methods, since it has no visual
+    // output. Can be called anywhere in the loop. No stop/volume/looping/
+    // instance control: this is deliberately just "play it."
+    void PlaySound(SoundHandle sound);
 
 private:
     struct Impl;

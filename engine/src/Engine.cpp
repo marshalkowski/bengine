@@ -23,6 +23,7 @@ int ToRaylibKey(engine::Key key) {
         case engine::Key::Down: return KEY_DOWN;
         case engine::Key::Left: return KEY_LEFT;
         case engine::Key::Right: return KEY_RIGHT;
+        case engine::Key::Space: return KEY_SPACE;
     }
     return KEY_NULL;
 }
@@ -95,17 +96,26 @@ Rect Animation::CurrentFrameRect() const {
     return Rect{frameIndex * clip_.frameWidth, 0.0f, clip_.frameWidth, clip_.frameHeight};
 }
 
-// The engine's texture resource manager: owns every loaded texture for the
-// lifetime of the Engine and deduplicates repeated LoadTexture calls for the
-// same path. Deliberately just a vector + a path->index cache for now — no
-// per-texture unload, since nothing yet needs it.
+// The engine's resource managers: own every loaded texture/sound for the
+// lifetime of the Engine and deduplicate repeated LoadTexture/LoadSound
+// calls for the same path. Deliberately just a vector + a path->index
+// cache for each — no per-resource unload, since nothing yet needs it.
+// Sounds get their own parallel vector+map rather than sharing the
+// texture one: two resource kinds isn't enough evidence to generalize
+// the pattern into something shared (see SoundHandle's doc comment).
 struct Engine::Impl {
     std::vector<::Texture2D> textures;
     std::unordered_map<std::string, std::size_t> textureIndexByPath;
 
+    std::vector<::Sound> sounds;
+    std::unordered_map<std::string, std::size_t> soundIndexByPath;
+
     ~Impl() {
         for (::Texture2D& texture : textures) {
             UnloadTexture(texture);
+        }
+        for (::Sound& sound : sounds) {
+            UnloadSound(sound);
         }
     }
 };
@@ -113,12 +123,15 @@ struct Engine::Impl {
 Engine::Engine(const WindowConfig& config) : impl_(std::make_unique<Impl>()) {
     InitWindow(config.width, config.height, config.title);
     SetTargetFPS(config.targetFPS);
+    InitAudioDevice();
 }
 
 Engine::~Engine() {
-    // Textures must be unloaded while the GL context is still alive, so
-    // destroy the resource manager before tearing down the window.
+    // Textures must be unloaded while the GL context is still alive, and
+    // sounds while the audio device is still alive, so destroy the
+    // resource managers before tearing down either.
     impl_.reset();
+    CloseAudioDevice();
     CloseWindow();
 }
 
@@ -213,6 +226,22 @@ void Engine::DrawSpriteRegion(TextureHandle texture, Rect sourceRect, float x, f
 
 int Engine::LoadedTextureCount() const {
     return static_cast<int>(impl_->textures.size());
+}
+
+SoundHandle Engine::LoadSound(const char* filePath) {
+    const auto existing = impl_->soundIndexByPath.find(filePath);
+    if (existing != impl_->soundIndexByPath.end()) {
+        return SoundHandle(existing->second);
+    }
+
+    impl_->sounds.push_back(::LoadSound(filePath));
+    const std::size_t index = impl_->sounds.size() - 1;
+    impl_->soundIndexByPath.emplace(filePath, index);
+    return SoundHandle(index);
+}
+
+void Engine::PlaySound(SoundHandle sound) {
+    ::PlaySound(impl_->sounds[sound.index_]);
 }
 
 } // namespace engine
