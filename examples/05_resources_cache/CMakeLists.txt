@@ -4,7 +4,7 @@ add_executable(05_resources_cache
 
 target_link_libraries(05_resources_cache
     PRIVATE
-        engine
+        bengine
 )
 
 # Same approach as the other sprite-loading examples: no asset-search-path

@@ -4,5 +4,5 @@ add_executable(07_primitives
 
 target_link_libraries(07_primitives
     PRIVATE
-        engine
+        bengine
 )

@@ -4,7 +4,7 @@ add_executable(prototype_04_scene_data
 
 target_link_libraries(prototype_04_scene_data
     PRIVATE
-        engine
+        bengine
 )
 
 # Same approach as the other asset-loading prototypes: no asset-search-path

@@ -4,7 +4,7 @@ add_executable(11_animation_clip
 
 target_link_libraries(11_animation_clip
     PRIVATE
-        engine
+        bengine
 )
 
 # Same approach as the other asset-loading examples: no asset-search-path

@@ -4,7 +4,7 @@ add_executable(prototype_05_board_game
 
 target_link_libraries(prototype_05_board_game
     PRIVATE
-        engine
+        bengine
 )
 
 # Unlike every previous prototype, this one loads no textures and no

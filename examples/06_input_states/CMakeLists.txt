@@ -4,5 +4,5 @@ add_executable(06_input_states
 
 target_link_libraries(06_input_states
     PRIVATE
-        engine
+        bengine
 )

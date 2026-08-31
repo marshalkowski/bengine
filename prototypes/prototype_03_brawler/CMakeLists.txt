@@ -4,7 +4,7 @@ add_executable(prototype_03_brawler
 
 target_link_libraries(prototype_03_brawler
     PRIVATE
-        engine
+        bengine
 )
 
 # Same approach as the other asset-loading prototypes: no asset-search-path

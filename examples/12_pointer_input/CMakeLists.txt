@@ -4,5 +4,5 @@ add_executable(12_pointer_input
 
 target_link_libraries(12_pointer_input
     PRIVATE
-        engine
+        bengine
 )

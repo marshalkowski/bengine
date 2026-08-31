@@ -4,5 +4,5 @@ add_executable(02_time
 
 target_link_libraries(02_time
     PRIVATE
-        engine
+        bengine
 )

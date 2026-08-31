@@ -4,5 +4,5 @@ add_executable(08_geometry
 
 target_link_libraries(08_geometry
     PRIVATE
-        engine
+        bengine
 )

@@ -4,7 +4,7 @@ add_executable(01_hello_sprite
 
 target_link_libraries(01_hello_sprite
     PRIVATE
-        engine
+        bengine
 )
 
 # The engine has no asset-loading/search-path concept yet (that's resource

@@ -1,17 +1,18 @@
-add_library(engine STATIC
+add_library(bengine STATIC
     src/Engine.cpp
 )
 
-target_include_directories(engine
+target_include_directories(bengine
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-# raylib is an implementation detail of the engine right now: consumers of
-# `engine` link against it only to get engine's public API, not raylib's.
-target_link_libraries(engine
+# raylib is an implementation detail of bengine right now: consumers link
+# against it only to get bengine's public API (namespace engine::), not
+# raylib's.
+target_link_libraries(bengine
     PRIVATE
         raylib
 )
 
-target_compile_features(engine PUBLIC cxx_std_20)
+target_compile_features(bengine PUBLIC cxx_std_20)

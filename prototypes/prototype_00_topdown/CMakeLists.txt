@@ -4,7 +4,7 @@ add_executable(prototype_00_topdown
 
 target_link_libraries(prototype_00_topdown
     PRIVATE
-        engine
+        bengine
 )
 
 # Same approach as the sprite-loading examples: no asset-search-path concept

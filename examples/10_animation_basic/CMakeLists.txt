@@ -4,7 +4,7 @@ add_executable(10_animation_basic
 
 target_link_libraries(10_animation_basic
     PRIVATE
-        engine
+        bengine
 )
 
 # Same approach as the other asset-loading examples: no asset-search-path

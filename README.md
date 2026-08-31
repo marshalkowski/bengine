@@ -1,9 +1,9 @@
-# bengine
+# Bengine
 
-A small, intentionally minimal reusable game engine in modern C++, built on
-[raylib](https://www.raylib.com/). Not a general-purpose engine — a clean
-architecture (static engine library, no owned `main()`) meant to support my
-own games while I learn engine design.
+Bengine is a small, intentionally minimal reusable game engine in modern
+C++, built on [raylib](https://www.raylib.com/). Not a general-purpose
+engine — a clean architecture (static library, no owned `main()`) meant
+to support my own games while I learn engine design.
 
 ## Requirements
 
@@ -24,7 +24,7 @@ cmake --build build --config Debug
 - The first command configures the project and fetches/builds raylib via
   `FetchContent`. This step is slow the first time (raylib is compiled from
   source) but is safe to re-run any time `CMakeLists.txt` changes.
-- The second command builds `raylib`, the `engine` static library, and every
+- The second command builds `raylib`, the `bengine` static library, and every
   example and prototype.
 - The third command runs the example directly from the build output. Each
   example is under `build/examples/<example_name>/Debug/<example_name>.exe`;
@@ -35,13 +35,14 @@ optimized build.
 
 ## Project layout
 
-- `engine/` — the reusable engine, built as a static library (`engine`). No
-  `main()`, no game-specific logic.
-- `examples/` — small standalone executables that link against `engine`.
+- `engine/` — Bengine itself, built as a static library (`bengine`) and
+  exposed to consumers through the `engine::` C++ namespace. No `main()`,
+  no game-specific logic.
+- `examples/` — small standalone executables that link against `bengine`.
   Each one owns its own `main()` and demonstrates/exercises one engine
   capability at a time.
 - `prototypes/` — small game prototypes that combine existing engine
   capabilities into something resembling a real game, to reveal what the
-  engine needs next. Each one is its own executable linked against `engine`,
-  just like a real game would be.
+  engine needs next. Each one is its own executable linked against
+  `bengine`, just like a real game would be.
 - `docs/` — architecture notes and design decisions, added as they accumulate.

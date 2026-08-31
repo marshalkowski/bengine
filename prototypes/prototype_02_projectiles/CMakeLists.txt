@@ -4,7 +4,7 @@ add_executable(prototype_02_projectiles
 
 target_link_libraries(prototype_02_projectiles
     PRIVATE
-        engine
+        bengine
 )
 
 # Same approach as the other asset-loading examples/prototypes: no

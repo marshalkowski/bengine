@@ -4,7 +4,7 @@ add_executable(04_resources_basic
 
 target_link_libraries(04_resources_basic
     PRIVATE
-        engine
+        bengine
 )
 
 # Same approach as 01_hello_sprite/03_input: no asset-search-path concept in

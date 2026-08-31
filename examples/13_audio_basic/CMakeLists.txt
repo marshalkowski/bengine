@@ -4,7 +4,7 @@ add_executable(13_audio_basic
 
 target_link_libraries(13_audio_basic
     PRIVATE
-        engine
+        bengine
 )
 
 # Same approach as every other asset-loading example: no asset-search-path

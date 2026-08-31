@@ -4,7 +4,7 @@ add_executable(03_input
 
 target_link_libraries(03_input
     PRIVATE
-        engine
+        bengine
 )
 
 # Same approach as 01_hello_sprite: no asset-loading concept in the engine
