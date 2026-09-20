@@ -52,12 +52,29 @@ the required C++20 compile feature, and raylib's linkage, all transitively
 through the `bengine` target — no raylib configuration, no reaching into
 `Bengine/engine/`, and no manual include paths.
 
-Bengine's own examples and prototypes are not built in this mode. They're
-controlled by `BENGINE_BUILD_EXAMPLES`/`BENGINE_BUILD_PROTOTYPES`, which
-default to `ON` when Bengine is configured as the top-level project (i.e.
-normal Bengine development, as in "Building and running an example" above)
-and `OFF` when it's pulled in via `add_subdirectory()` by another project.
-Either can be turned on explicitly if a consumer wants them anyway.
+Bengine's own examples, prototypes, and tests are not built in this mode.
+They're controlled by `BENGINE_BUILD_EXAMPLES`/`BENGINE_BUILD_PROTOTYPES`/
+`BENGINE_BUILD_TESTS`, which default to `ON` when Bengine is configured as
+the top-level project (i.e. normal Bengine development, as in "Building and
+running an example" above) and `OFF` when it's pulled in via
+`add_subdirectory()` by another project. Any of them can be turned on
+explicitly if a consumer wants them anyway.
+
+### Assets
+
+`Engine::SetAssetRoot("assets")` resolves `"assets"` against the running
+executable's own directory (not the process's current working directory),
+so `LoadTexture`/`LoadSound`/`ResolveAssetPath` calls after it can use plain
+root-relative paths (e.g. `"characters/knight/idle.png"`) regardless of
+whether the game is launched from Visual Studio, a shell, or the `.exe`
+directly.
+
+That only resolves paths at runtime; a consumer still needs its own
+`assets/` copied next to its built executable at build time. See
+`examples/14_camera_basic/CMakeLists.txt` for the recommended plain-CMake
+pattern (`add_custom_command(... POST_BUILD ... copy_directory ...
+$<TARGET_FILE_DIR:target>/assets)`), which that example also demonstrates
+end-to-end.
 
 ## Project layout
 

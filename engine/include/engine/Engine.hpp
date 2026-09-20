@@ -9,6 +9,14 @@ namespace engine {
 // Formats a float with a fixed number of decimal places, e.g. ToString(0.5f, 2) -> "0.50".
 std::string ToString(float value, int decimalPlaces = 2);
 
+// Directory containing the running executable, with a trailing separator.
+// Stable regardless of the process's current working directory, which
+// differs between launching the .exe directly and running it under a
+// debugger/IDE -- unlike a path built from argv[0], which is not reliable.
+// Games do not normally need to call this directly; Engine::SetAssetRoot
+// already resolves a relative root against it (see SetAssetRoot below).
+std::string ExecutableDirectory();
+
 struct WindowConfig {
     int width = 800;
     int height = 450;
@@ -29,6 +37,14 @@ inline constexpr Color DarkGray{80, 80, 80, 255};
 // working in. Pure data — no rendering or backend dependency.
 struct Rect {
     float x, y, width, height;
+};
+
+// A 2D point or offset, in whatever coordinate space the caller is working
+// in (screen pixels, world units, etc.). Pure data, used wherever an x/y
+// pair travels together -- e.g. Camera2D and its coordinate conversions.
+struct Vec2 {
+    float x = 0.0f;
+    float y = 0.0f;
 };
 
 // True if a and b share a region of positive area. Rectangles that only
@@ -83,18 +99,36 @@ private:
     bool completed_;
 };
 
-// Physical keyboard keys. Only the keys concrete examples have needed so far;
-// extend as new examples require more.
+// Physical keyboard keys. Covers ordinary letters, digits, arrows, and the
+// common control/modifier keys, so a typical game shouldn't need to extend
+// this just to bind another everyday key. Extend as new examples require
+// more (function keys, numpad, gamepad, etc. -- none demonstrated yet).
 enum class Key {
-    W,
-    A,
-    S,
-    D,
+    A, B, C, D, E, F, G, H, I, J, K, L, M,
+    N, O, P, Q, R, S, T, U, V, W, X, Y, Z,
+
+    Zero, One, Two, Three, Four, Five, Six, Seven, Eight, Nine,
+
     Up,
     Down,
     Left,
     Right,
+
     Space,
+    Enter,
+    Escape,
+    Tab,
+    Backspace,
+
+    // Left/right are exposed separately rather than as one generic
+    // Shift/Ctrl/Alt silently mapped to a side -- callers that don't care
+    // which side was pressed check both explicitly.
+    LeftShift,
+    RightShift,
+    LeftCtrl,
+    RightCtrl,
+    LeftAlt,
+    RightAlt,
 };
 
 // Physical mouse buttons. Only the button a point-and-click prototype has
@@ -132,6 +166,17 @@ private:
     explicit SoundHandle(std::size_t index) : index_(index) {}
 
     std::size_t index_;
+};
+
+// A world-space 2D camera: pure data describing where the viewport is
+// centered and how zoomed in it is. Everything else -- following a target,
+// smoothing, dead zones, bounds/zone clamping, scripted movement -- is game
+// policy built on top by writing to `position`/`zoom` each frame, not part
+// of this primitive. No rotation: nothing has needed it yet (see
+// Engine::BeginCameraMode).
+struct Camera2D {
+    Vec2 position{};
+    float zoom = 1.0f;
 };
 
 // Owns window + frame lifecycle. Does not own main() or the game loop itself —
@@ -176,17 +221,53 @@ public:
     // needed held-button or release detection so far (see MouseButton).
     bool IsMouseButtonPressed(MouseButton button) const;
 
+    // Between these calls, Draw*'s x/y arguments are interpreted in world
+    // space and transformed through `camera` to screen space -- panning,
+    // zooming everything drawn together. Call between BeginFrame/EndFrame;
+    // do not nest a second BeginCameraMode before the matching EndCameraMode.
+    // Anything drawn outside this pair stays in screen space, e.g. HUD/UI
+    // that should not move or scale with the world.
+    void BeginCameraMode(const Camera2D& camera);
+    void EndCameraMode();
+
+    // Coordinate conversion for `camera`, independent of whether camera mode
+    // is currently active -- e.g. converting a mouse click (screen space) to
+    // a world-space position to hit-test against, without needing to be
+    // inside a BeginCameraMode/EndCameraMode block to do it.
+    Vec2 WorldToScreen(const Camera2D& camera, Vec2 worldPoint) const;
+    Vec2 ScreenToWorld(const Camera2D& camera, Vec2 screenPoint) const;
+
     void Clear(Color color);
     void DrawText(const char* text, int x, int y, int fontSize, Color color);
     void DrawText(const std::string& text, int x, int y, int fontSize, Color color);
     void DrawRectangle(float x, float y, float width, float height, Color color);
     void DrawLine(float x1, float y1, float x2, float y2, Color color);
 
-    // Loads a texture and hands back a handle to it. The engine owns the
-    // texture from this point on; there is no explicit unload — all loaded
-    // textures are released when this Engine is destroyed. Repeated calls
-    // with the same filePath reuse the already-loaded texture instead of
-    // loading it again.
+    // Establishes the base directory that subsequent relative LoadTexture/
+    // LoadSound/ResolveAssetPath calls resolve against. A relative `root`
+    // (the normal case, e.g. "assets") is resolved against the running
+    // executable's directory, not the process's current working directory
+    // -- so it behaves the same whether launched from Visual Studio,
+    // PowerShell, or by double-clicking the .exe. An absolute `root` is
+    // used as given. Optional -- an unset root (the default) leaves
+    // LoadTexture/LoadSound/ResolveAssetPath behaving exactly as before,
+    // taking paths as given.
+    void SetAssetRoot(const std::string& root);
+
+    // Resolves relativePath against the asset root exactly as LoadTexture/
+    // LoadSound do internally, without loading anything -- for a game's own
+    // non-texture/sound assets (e.g. level data it reads itself). An
+    // already-absolute relativePath is returned unchanged, bypassing the
+    // root, same as LoadTexture/LoadSound.
+    std::string ResolveAssetPath(const std::string& relativePath) const;
+
+    // Loads a texture and hands back a handle to it. filePath is resolved
+    // against the asset root (see SetAssetRoot) if one is set and filePath
+    // is not already absolute. The engine owns the texture from this point
+    // on; there is no explicit unload — all loaded textures are released
+    // when this Engine is destroyed. Repeated calls that resolve to the
+    // same path reuse the already-loaded texture instead of loading it
+    // again.
     TextureHandle LoadTexture(const char* filePath);
     int TextureWidth(TextureHandle texture) const;
     int TextureHeight(TextureHandle texture) const;
@@ -201,10 +282,11 @@ public:
     // not meant to be a basis for game logic.
     int LoadedTextureCount() const;
 
-    // Loads a short sound effect and hands back a handle to it, caching by
-    // filePath exactly like LoadTexture — repeated calls with the same
-    // path reuse the already-loaded sound. There is no explicit unload;
-    // all loaded sounds are released when this Engine is destroyed.
+    // Loads a short sound effect and hands back a handle to it, resolving
+    // against the asset root and caching exactly like LoadTexture —
+    // repeated calls that resolve to the same path reuse the already-loaded
+    // sound. There is no explicit unload; all loaded sounds are released
+    // when this Engine is destroyed.
     SoundHandle LoadSound(const char* filePath);
 
     // Triggers playback once and returns immediately — not tied to

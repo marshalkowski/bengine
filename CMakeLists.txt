@@ -36,6 +36,7 @@ add_subdirectory(engine)
 # ---------------------------------------------------------------------------
 option(BENGINE_BUILD_EXAMPLES "Build Bengine's examples" ${Bengine_IS_TOP_LEVEL})
 option(BENGINE_BUILD_PROTOTYPES "Build Bengine's prototypes" ${Bengine_IS_TOP_LEVEL})
+option(BENGINE_BUILD_TESTS "Build Bengine's tests" ${Bengine_IS_TOP_LEVEL})
 
 # examples/: narrow, one-capability-at-a-time demonstrations of the engine API.
 if(BENGINE_BUILD_EXAMPLES)
@@ -53,6 +54,16 @@ if(BENGINE_BUILD_EXAMPLES)
     add_subdirectory(examples/11_animation_clip)
     add_subdirectory(examples/12_pointer_input)
     add_subdirectory(examples/13_audio_basic)
+    add_subdirectory(examples/14_camera_basic)
+endif()
+
+# engine/tests/: focused tests for pure, state-free engine logic (path
+# resolution, camera coordinate conversion). Off by default for a consumer
+# pulling Bengine in via add_subdirectory(), same reasoning as examples/
+# prototypes above.
+if(BENGINE_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(engine/tests)
 endif()
 
 # prototypes/: small games combining existing capabilities, used to surface

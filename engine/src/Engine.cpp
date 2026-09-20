@@ -7,6 +7,9 @@
 
 #include "raylib.h"
 
+#include "CameraMath.hpp"
+#include "PathUtil.hpp"
+
 namespace {
 
 ::Color ToRaylibColor(engine::Color color) {
@@ -15,15 +18,57 @@ namespace {
 
 int ToRaylibKey(engine::Key key) {
     switch (key) {
-        case engine::Key::W: return KEY_W;
         case engine::Key::A: return KEY_A;
-        case engine::Key::S: return KEY_S;
+        case engine::Key::B: return KEY_B;
+        case engine::Key::C: return KEY_C;
         case engine::Key::D: return KEY_D;
+        case engine::Key::E: return KEY_E;
+        case engine::Key::F: return KEY_F;
+        case engine::Key::G: return KEY_G;
+        case engine::Key::H: return KEY_H;
+        case engine::Key::I: return KEY_I;
+        case engine::Key::J: return KEY_J;
+        case engine::Key::K: return KEY_K;
+        case engine::Key::L: return KEY_L;
+        case engine::Key::M: return KEY_M;
+        case engine::Key::N: return KEY_N;
+        case engine::Key::O: return KEY_O;
+        case engine::Key::P: return KEY_P;
+        case engine::Key::Q: return KEY_Q;
+        case engine::Key::R: return KEY_R;
+        case engine::Key::S: return KEY_S;
+        case engine::Key::T: return KEY_T;
+        case engine::Key::U: return KEY_U;
+        case engine::Key::V: return KEY_V;
+        case engine::Key::W: return KEY_W;
+        case engine::Key::X: return KEY_X;
+        case engine::Key::Y: return KEY_Y;
+        case engine::Key::Z: return KEY_Z;
+        case engine::Key::Zero: return KEY_ZERO;
+        case engine::Key::One: return KEY_ONE;
+        case engine::Key::Two: return KEY_TWO;
+        case engine::Key::Three: return KEY_THREE;
+        case engine::Key::Four: return KEY_FOUR;
+        case engine::Key::Five: return KEY_FIVE;
+        case engine::Key::Six: return KEY_SIX;
+        case engine::Key::Seven: return KEY_SEVEN;
+        case engine::Key::Eight: return KEY_EIGHT;
+        case engine::Key::Nine: return KEY_NINE;
         case engine::Key::Up: return KEY_UP;
         case engine::Key::Down: return KEY_DOWN;
         case engine::Key::Left: return KEY_LEFT;
         case engine::Key::Right: return KEY_RIGHT;
         case engine::Key::Space: return KEY_SPACE;
+        case engine::Key::Enter: return KEY_ENTER;
+        case engine::Key::Escape: return KEY_ESCAPE;
+        case engine::Key::Tab: return KEY_TAB;
+        case engine::Key::Backspace: return KEY_BACKSPACE;
+        case engine::Key::LeftShift: return KEY_LEFT_SHIFT;
+        case engine::Key::RightShift: return KEY_RIGHT_SHIFT;
+        case engine::Key::LeftCtrl: return KEY_LEFT_CONTROL;
+        case engine::Key::RightCtrl: return KEY_RIGHT_CONTROL;
+        case engine::Key::LeftAlt: return KEY_LEFT_ALT;
+        case engine::Key::RightAlt: return KEY_RIGHT_ALT;
     }
     return KEY_NULL;
 }
@@ -35,6 +80,17 @@ int ToRaylibMouseButton(engine::MouseButton button) {
     return MOUSE_BUTTON_LEFT;
 }
 
+// offset = screen center, rotation = 0 -- kept in sync with the pure
+// conversion math in CameraMath.hpp (see WorldToScreen/ScreenToWorld below).
+::Camera2D ToRaylibCamera2D(const engine::Camera2D& camera) {
+    return ::Camera2D{
+        ::Vector2{static_cast<float>(::GetScreenWidth()) * 0.5f, static_cast<float>(::GetScreenHeight()) * 0.5f},
+        ::Vector2{camera.position.x, camera.position.y},
+        0.0f,
+        camera.zoom,
+    };
+}
+
 } // namespace
 
 namespace engine {
@@ -43,6 +99,10 @@ std::string ToString(float value, int decimalPlaces) {
     char buffer[64];
     std::snprintf(buffer, sizeof(buffer), "%.*f", decimalPlaces, value);
     return std::string(buffer);
+}
+
+std::string ExecutableDirectory() {
+    return ::GetApplicationDirectory();
 }
 
 bool Intersects(const Rect& a, const Rect& b) {
@@ -110,6 +170,10 @@ struct Engine::Impl {
     std::vector<::Sound> sounds;
     std::unordered_map<std::string, std::size_t> soundIndexByPath;
 
+    // Empty means unset -- LoadTexture/LoadSound/ResolveAssetPath then leave
+    // paths untouched (see Engine::SetAssetRoot).
+    std::string assetRoot;
+
     ~Impl() {
         for (::Texture2D& texture : textures) {
             UnloadTexture(texture);
@@ -175,6 +239,26 @@ bool Engine::IsMouseButtonPressed(MouseButton button) const {
     return ::IsMouseButtonPressed(ToRaylibMouseButton(button));
 }
 
+void Engine::BeginCameraMode(const Camera2D& camera) {
+    ::BeginMode2D(ToRaylibCamera2D(camera));
+}
+
+void Engine::EndCameraMode() {
+    ::EndMode2D();
+}
+
+Vec2 Engine::WorldToScreen(const Camera2D& camera, Vec2 worldPoint) const {
+    return detail::CameraWorldToScreen(camera, worldPoint,
+                                        static_cast<float>(::GetScreenWidth()),
+                                        static_cast<float>(::GetScreenHeight()));
+}
+
+Vec2 Engine::ScreenToWorld(const Camera2D& camera, Vec2 screenPoint) const {
+    return detail::CameraScreenToWorld(camera, screenPoint,
+                                        static_cast<float>(::GetScreenWidth()),
+                                        static_cast<float>(::GetScreenHeight()));
+}
+
 void Engine::Clear(Color color) {
     ClearBackground(ToRaylibColor(color));
 }
@@ -195,15 +279,25 @@ void Engine::DrawLine(float x1, float y1, float x2, float y2, Color color) {
     ::DrawLineV(::Vector2{x1, y1}, ::Vector2{x2, y2}, ToRaylibColor(color));
 }
 
+void Engine::SetAssetRoot(const std::string& root) {
+    impl_->assetRoot = root.empty() ? std::string() : detail::JoinIfRelative(ExecutableDirectory(), root);
+}
+
+std::string Engine::ResolveAssetPath(const std::string& relativePath) const {
+    return detail::JoinIfRelative(impl_->assetRoot, relativePath);
+}
+
 TextureHandle Engine::LoadTexture(const char* filePath) {
-    const auto existing = impl_->textureIndexByPath.find(filePath);
+    const std::string resolvedPath = ResolveAssetPath(filePath);
+
+    const auto existing = impl_->textureIndexByPath.find(resolvedPath);
     if (existing != impl_->textureIndexByPath.end()) {
         return TextureHandle(existing->second);
     }
 
-    impl_->textures.push_back(::LoadTexture(filePath));
+    impl_->textures.push_back(::LoadTexture(resolvedPath.c_str()));
     const std::size_t index = impl_->textures.size() - 1;
-    impl_->textureIndexByPath.emplace(filePath, index);
+    impl_->textureIndexByPath.emplace(resolvedPath, index);
     return TextureHandle(index);
 }
 
@@ -229,14 +323,16 @@ int Engine::LoadedTextureCount() const {
 }
 
 SoundHandle Engine::LoadSound(const char* filePath) {
-    const auto existing = impl_->soundIndexByPath.find(filePath);
+    const std::string resolvedPath = ResolveAssetPath(filePath);
+
+    const auto existing = impl_->soundIndexByPath.find(resolvedPath);
     if (existing != impl_->soundIndexByPath.end()) {
         return SoundHandle(existing->second);
     }
 
-    impl_->sounds.push_back(::LoadSound(filePath));
+    impl_->sounds.push_back(::LoadSound(resolvedPath.c_str()));
     const std::size_t index = impl_->sounds.size() - 1;
-    impl_->soundIndexByPath.emplace(filePath, index);
+    impl_->soundIndexByPath.emplace(resolvedPath, index);
     return SoundHandle(index);
 }
 
